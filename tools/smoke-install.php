@@ -112,7 +112,7 @@ try {
         if ($listCode !== 0) {
             $fail('cannot list the archive: ' . trim($listErr));
         } else {
-            foreach (['composer.json', 'bin/rampart', 'config/rampart.php', 'README.md'] as $required) {
+            foreach (['composer.json', 'bin/rampart', 'config/rampart.php', 'src/bootstrap.php', 'README.md'] as $required) {
                 if (!in_array($required, $names, true)) {
                     $fail('archive is missing ' . $required);
                 }
