@@ -1,12 +1,29 @@
 # Rampart PHP Quality Checker
 
+[![CI](https://github.com/thiennhant95/Rampart-PHP/actions/workflows/ci.yml/badge.svg)](https://github.com/thiennhant95/Rampart-PHP/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-EN%20%7C%20JA%20%7C%20VI-blue)](https://thiennhant95.github.io/Rampart-PHP/)
+[![PHP 7.4+](https://img.shields.io/badge/PHP-7.4%2B-777BB4.svg)](composer.json)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 **Standalone quality gate for plain PHP and any framework** — Slim, CodeIgniter 4,
-FuelPHP, Symfony, Laravel. One CLI, no install into the scanned project, no
-framework boot.
+FuelPHP, Symfony, Phalcon, Laravel. One CLI, no install into the scanned project,
+no framework boot.
 
 Rampart wraps `phpcs`, `phpstan`, `phpunit`, `composer audit`, `npm audit` and
 `trivy`, and adds 59 custom PHP-Parser rules for security, framework routing,
 missing tests and conventions.
+
+## Rampart family
+
+| Project | Focus | Repository | Documentation |
+|---|---|---|---|
+| **Rampart** | Laravel Artisan quality gate | [thiennhant95/Rampart](https://github.com/thiennhant95/Rampart) | [Pages](https://thiennhant95.github.io/Rampart/) |
+| **Rampart PHP** | Plain PHP + frameworks, PHP 7.4+ | [thiennhant95/Rampart-PHP](https://github.com/thiennhant95/Rampart-PHP) | [Pages](https://thiennhant95.github.io/Rampart-PHP/) |
+| **Rampart WP** | WordPress plugins/themes | [thiennhant95/Rampart-Wordpress](https://github.com/thiennhant95/Rampart-Wordpress) | [Pages](https://thiennhant95.github.io/Rampart-Wordpress/) |
+
+Full documentation: **[English](https://thiennhant95.github.io/Rampart-PHP/en/)** ·
+**[日本語](https://thiennhant95.github.io/Rampart-PHP/ja/)** ·
+**[Tiếng Việt](https://thiennhant95.github.io/Rampart-PHP/vi/)**
 
 ## Why standalone
 

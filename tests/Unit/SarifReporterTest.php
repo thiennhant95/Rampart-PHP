@@ -215,7 +215,7 @@ final class SarifReporterTest extends TestCase
                 true
             );
             self::assertSame(
-                'https://github.com/thiennhant95/rampart-php',
+                'https://github.com/thiennhant95/Rampart-PHP',
                 $fallbackPayload['runs'][0]['tool']['driver']['informationUri']
             );
         } finally {
