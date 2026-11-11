@@ -19,8 +19,6 @@ final class NamingConventionAnalyzer implements ScanContextAware
 
     private const RULE = 'NAMING_CONVENTION';
 
-    private const BOOL_PREFIXES = ['is', 'has', 'can', 'should'];
-
     public function analyze(array $files): array
     {
         $issues = [];
@@ -79,15 +77,21 @@ final class NamingConventionAnalyzer implements ScanContextAware
                 $methodName = $method->name instanceof Node\Identifier ? $method->name->toString() : '';
                 $methodName = lcfirst($methodName);
 
-                foreach (self::BOOL_PREFIXES as $prefix) {
-                    if (strncmp($methodName, $prefix, strlen($prefix)) === 0 && !$this->declaredReturnBool($method)) {
-                        $issues[] = $this->issue(
-                            $file,
-                            $method,
-                            sprintf('Method "%s()" starts with "%s" and should declare a bool return type.', $methodName, $prefix)
-                        );
-                        break;
-                    }
+                // `issue()` starts with "is" but is not a predicate; require a
+                // camelCase segment after the prefix (`isFoo`, `hasBar`).
+                if (
+                    preg_match('/^(is|has|can|should)[A-Z]/', $methodName, $prefixMatch) === 1
+                    && !$this->declaredReturnBool($method)
+                ) {
+                    $issues[] = $this->issue(
+                        $file,
+                        $method,
+                        sprintf(
+                            'Method "%s()" starts with "%s" and should declare a bool return type.',
+                            $methodName,
+                            $prefixMatch[1]
+                        )
+                    );
                 }
             }
         }

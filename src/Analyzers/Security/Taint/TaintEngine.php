@@ -619,11 +619,6 @@ final class TaintEngine
         }
     }
 
-    private function isStringInterpolatedTainted(String_ $str, array $tainted): bool
-    {
-        return (bool) $str->getAttribute('qc_tainted_interp');
-    }
-
     private function emit(string $file, Node $call, string $callName): void
     {
         $rule = $this->ruleForCall($callName);

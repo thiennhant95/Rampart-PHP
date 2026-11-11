@@ -260,7 +260,7 @@ final class HtmlReporterTest extends TestCase
     {
         $html = $this->renderHtml();
 
-        self::assertStringContainsString('Laravel Quality Report', $html);
+        self::assertStringContainsString('Rampart PHP Quality Report', $html);
         self::assertStringContainsString('<style>', $html);
         self::assertStringContainsString('<script>', $html);
         self::assertStringNotContainsString('src="http', $html);

@@ -34,8 +34,11 @@ final class ConsoleReporter implements ReporterInterface
         }
 
         $this->output->writeln('');
-        $this->output->writeln('<fg=cyan>Laravel Quality Checker</> <options=bold>' . PackageVersion::label($ctx->packageVersion) . '</>');
+        $this->output->writeln('<fg=cyan>Rampart PHP Quality Checker</> <options=bold>' . PackageVersion::label($ctx->packageVersion) . '</>');
         $this->output->writeln('Generated: ' . (new \DateTimeImmutable())->format('Y-m-d H:i:s'));
+        if ($ctx->frameworkProfile !== null) {
+            $this->output->writeln('Framework: ' . $ctx->frameworkProfile->label);
+        }
         $this->output->writeln(sprintf(
             'Tier: %s | Fail-on: %s | Min-confidence: %s',
             $ctx->tier,

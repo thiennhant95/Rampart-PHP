@@ -7,13 +7,11 @@ namespace Rampart\Php\Result;
 /**
  * Resolves the version string printed in every report header.
  *
- * Two entry points produce reports — `php artisan rampart:check` and
- * `bin/rampart` — and they disagreed: the Artisan command read
- * composer.json, the standalone runner never set it at all, so every
- * standalone report was stamped `v0.0.0` (CheckContext's default) while the
- * same code path in a Laravel app showed a real version. A version field in a
- * report is what a reader uses to tell "this scan ran on 0.7.0" from "this scan
- * ran on last week's main", so both paths must go through here.
+ * The standalone runner used to leave this at CheckContext's default, so every
+ * report was stamped `v0.0.0` while the same code path in a test showed a real
+ * version. A version field is what a reader uses to tell "this scan ran on
+ * 0.7.0" from "this scan ran on last week's main", so every entry point goes
+ * through here.
  *
  * Resolution order:
  *  1. composer.json `version` — set only when a maintainer pins it (Composer

@@ -58,10 +58,11 @@ Outputs: `rampart-report.html`, `rampart-report.json`, `rampart-report.md`,
 | Target | Result |
 |---|---|
 | This package, `src/` + `bin/` self-scan | **0 findings** |
+| This package, all optional rules (convention, coverage, taint) | **0 findings** |
 | `slimphp/Slim-Skeleton` | **0 findings** |
 | `codeigniter4/appstarter` | **0 findings** |
 | `thiennhant95/Rampart` (Laravel-flavoured library) | **1 finding** (PHP 8.1 EOL only) |
-| Test suite | `1424 tests, 3433 assertions` on PHP 7.4 **and** 8.2, PHPStan `[OK]`, PHPCS clean |
+| Test suite | `1428 tests, 3436 assertions` on PHP 7.4 **and** 8.2, PHPStan `[OK]`, PHPCS clean |
 
 This is a snapshot, not a live benchmark. Use
 [tools/benchmark-projects.php](tools/benchmark-projects.php) on your own
@@ -265,6 +266,14 @@ reliable warning, `low` is a heuristic hint. `--min-confidence` filters what is
 reported; `--tier=security` only fails the gate on high-confidence security
 findings; `--min-severity` hides light findings from reports without changing
 the gate.
+
+## Large scans and the taint engine
+
+`bin/rampart` raises the CLI `memory_limit` to **512M** when PHP's limit is
+lower. The default analyzers run comfortably below that; the opt-in data-flow
+engine (`analyzers.security.taint_engine`) retains a call graph and can need
+more on very large trees — raise `memory_limit` in `php.ini` or run with
+`php -d memory_limit=1G bin/rampart ...`.
 
 ## Baseline
 

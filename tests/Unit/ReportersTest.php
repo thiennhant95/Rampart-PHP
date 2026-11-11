@@ -208,7 +208,7 @@ final class ReportersTest extends TestCase
 
         $md = (string) file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . 'rampart-report.md');
 
-        self::assertStringContainsString('# Laravel Quality Report', $md);
+        self::assertStringContainsString('# Rampart PHP Quality Report', $md);
         self::assertStringContainsString('## Contents', $md);
         self::assertStringContainsString('- [Summary](#summary)', $md);
         self::assertStringContainsString('- [Per-Checker](#per-checker)', $md);
@@ -306,7 +306,7 @@ final class ReportersTest extends TestCase
 
         $text = $output->fetch();
 
-        self::assertStringContainsString('Laravel Quality Checker', $text);
+        self::assertStringContainsString('Rampart PHP Quality Checker', $text);
         self::assertStringContainsString('Tier: quality | Fail-on: error | Min-confidence: low', $text);
         self::assertStringContainsString('Issues — custom:', $text);
         self::assertStringContainsString('app/Http/Controllers/UserController.php', $text);
@@ -374,7 +374,7 @@ final class ReportersTest extends TestCase
 
         $html = (string) file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . 'rampart-report.html');
 
-        // Sample: SQL_INJECTION critical/high (Security) -> P0; TODO_FIXME info/low -> P3.
+        // Sample: SQL_INJECTION critical/high (Security) -> P0; convention marker info/low -> P3.
         self::assertStringContainsString('>Priority<', $html);
         self::assertStringContainsString('>P0<', $html);
         self::assertStringContainsString('>P3<', $html);
@@ -402,7 +402,7 @@ final class ReportersTest extends TestCase
         self::assertSame('critical', $byCategory['Security']['highest']);
         self::assertSame(1, $byCategory['Security']['p0']);
         self::assertSame('Immediate', $byCategory['Security']['action']);
-        // TODO_FIXME info/low -> Maintainability, P3, Backlog.
+        // Convention marker info/low -> Maintainability, P3, Backlog.
         self::assertSame(1, $byCategory['Maintainability']['findings']);
         self::assertSame(1, $byCategory['Maintainability']['p3']);
         self::assertSame('Backlog', $byCategory['Maintainability']['action']);
