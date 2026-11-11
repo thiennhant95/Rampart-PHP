@@ -61,10 +61,10 @@ final class TodoFixmeAnalyzer implements ScanContextAware
                 sprintf('Marked with "%s" comment: %s', strtoupper($m[1]), trim($line)),
                 $file,
                 $index + 1,
-                Severity::Info,
+                Severity::$Info,
                 'custom',
                 ['marker' => strtoupper($m[1])],
-                Confidence::Low
+                Confidence::$Low
             );
         }
 
@@ -75,10 +75,10 @@ final class TodoFixmeAnalyzer implements ScanContextAware
     {
         $trimmed = ltrim($line);
 
-        if (str_starts_with($trimmed, '//') || str_starts_with($trimmed, '#')) {
+        if (strncmp($trimmed, '//', strlen('//')) === 0 || strncmp($trimmed, '#', strlen('#')) === 0) {
             return true;
         }
 
-        return str_starts_with($trimmed, '/*');
+        return strncmp($trimmed, '/*', strlen('/*')) === 0;
     }
 }

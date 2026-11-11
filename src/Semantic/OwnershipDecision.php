@@ -33,7 +33,80 @@ final class OwnershipDecision
     public const EXPOSED = 'exposed';
 
     public const UNKNOWN = 'unknown';
-
+    /**
+     * @readonly
+     */
+    public string $status;
+    /**
+     * @readonly
+     */
+    public string $controller;
+    /**
+     * @readonly
+     */
+    public string $method;
+    /**
+     * @readonly
+     */
+    public string $file;
+    /**
+     * @readonly
+     */
+    public int $line;
+    /**
+     * @var array{methods: list<string>, uri: (string | null), file: string, line: (int | null)}|null
+     * @readonly
+     */
+    public ?array $route;
+    /**
+     * @var list<string>
+     * @readonly
+     */
+    public array $middleware;
+    /**
+     * @var array{kind: string, detail: string}|null
+     * @readonly
+     */
+    public ?array $identifier;
+    /**
+     * @var array{kind: string, detail: string}|null
+     * @readonly
+     */
+    public ?array $lookup;
+    /**
+     * @var array{kind: string, detail: string}|null
+     * @readonly
+     */
+    public ?array $operation;
+    /**
+     * @var array{kind: string, detail: string}|null
+     * @readonly
+     */
+    public ?array $principal;
+    /**
+     * @var list<array{mechanism: string, detail: string, confidence: string}>
+     * @readonly
+     */
+    public array $ownershipEvidence;
+    /**
+     * @var list<array{mechanism: string, detail: string, confidence: string}>
+     * @readonly
+     */
+    public array $authorizationEvidence;
+    /**
+     * @readonly
+     */
+    public string $confidence;
+    /**
+     * @var list<array{kind: string, detail: string, line: (int | null)}>
+     * @readonly
+     */
+    public array $trace;
+    /**
+     * @var string
+     * @readonly
+     */
+    public string $reason = '';
     /**
      * @param array{methods: list<string>, uri: string|null, file: string, line: int|null}|null $route
      * @param list<string> $middleware full inherited stack, outermost first
@@ -49,24 +122,24 @@ final class OwnershipDecision
      *   ADMIN_CONTEXT, CUSTOM_MIDDLEWARE, UNRESOLVED_RESOURCE,
      *   UNRESOLVED_PRINCIPAL, AUTHORIZATION_AFTER_SINK; for EXPOSED NO_AUTH
      */
-    public function __construct(
-        public readonly string $status,
-        public readonly string $controller,
-        public readonly string $method,
-        public readonly string $file,
-        public readonly int $line,
-        public readonly ?array $route,
-        public readonly array $middleware,
-        public readonly ?array $identifier,
-        public readonly ?array $lookup,
-        public readonly ?array $operation,
-        public readonly ?array $principal,
-        public readonly array $ownershipEvidence,
-        public readonly array $authorizationEvidence,
-        public readonly string $confidence,
-        public readonly array $trace,
-        public readonly string $reason = '',
-    ) {
+    public function __construct(string $status, string $controller, string $method, string $file, int $line, ?array $route, array $middleware, ?array $identifier, ?array $lookup, ?array $operation, ?array $principal, array $ownershipEvidence, array $authorizationEvidence, string $confidence, array $trace, string $reason = '')
+    {
+        $this->status = $status;
+        $this->controller = $controller;
+        $this->method = $method;
+        $this->file = $file;
+        $this->line = $line;
+        $this->route = $route;
+        $this->middleware = $middleware;
+        $this->identifier = $identifier;
+        $this->lookup = $lookup;
+        $this->operation = $operation;
+        $this->principal = $principal;
+        $this->ownershipEvidence = $ownershipEvidence;
+        $this->authorizationEvidence = $authorizationEvidence;
+        $this->confidence = $confidence;
+        $this->trace = $trace;
+        $this->reason = $reason;
     }
 
     /**

@@ -57,7 +57,7 @@ final class MigrationAnalyzer extends AbstractAnalyzer
 
     private function isMigrationFile(string $file): bool
     {
-        return str_contains(str_replace('\\', '/', $file), '/database/migrations/');
+        return strpos(str_replace('\\', '/', $file), '/database/migrations/') !== false;
     }
 
     private function analyzeFile(string $file): array
@@ -91,9 +91,9 @@ final class MigrationAnalyzer extends AbstractAnalyzer
                 'Migration defines up() but no down() — it cannot be rolled back safely.',
                 $file,
                 $up->getStartLine(),
-                Severity::Warning,
+                Severity::$Warning,
                 ['kind' => 'missing_down'],
-                Confidence::Medium
+                Confidence::$Medium
             );
         }
 
@@ -107,9 +107,9 @@ final class MigrationAnalyzer extends AbstractAnalyzer
                         'Destructive schema operation in up(): dropping a table/column that is not re-created in the same migration.',
                         $file,
                         $up->getStartLine(),
-                        Severity::Warning,
+                        Severity::$Warning,
                         ['kind' => 'destructive_up'],
-                        Confidence::Medium
+                        Confidence::$Medium
                     );
                 }
             }
@@ -123,9 +123,9 @@ final class MigrationAnalyzer extends AbstractAnalyzer
                         'Destructive raw SQL in up(): DROP/TRUNCATE of (' . implode(', ', $dropped) . ') with no re-creation in down().',
                         $file,
                         $up->getStartLine(),
-                        Severity::Warning,
+                        Severity::$Warning,
                         ['kind' => 'destructive_raw_sql'],
-                        Confidence::Medium
+                        Confidence::$Medium
                     );
                 }
             }
@@ -157,7 +157,7 @@ final class MigrationAnalyzer extends AbstractAnalyzer
                 continue;
             }
             $class = strtolower(ltrim($call->class->toString(), '\\'));
-            if ($class !== 'db' && !str_ends_with($class, '\\db')) {
+            if ($class !== 'db' && substr_compare($class, '\\db', -strlen('\\db')) !== 0) {
                 continue;
             }
             $arg = $call->args[0] ?? null;

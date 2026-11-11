@@ -33,7 +33,7 @@ final class PermsAnalyzer implements ScanContextAware
         // which has storage/bootstrap/cache with 777 — that is not the project's
         // deploy artifact and must not be reported when the test scans fixtures.
         $normalizedRoot = str_replace('\\', '/', $root);
-        if (str_contains($normalizedRoot, '/vendor/orchestra/testbench-core')) {
+        if (strpos($normalizedRoot, '/vendor/orchestra/testbench-core') !== false) {
             return [];
         }
         // Check a small set of sensitive paths, not every file
@@ -57,10 +57,10 @@ final class PermsAnalyzer implements ScanContextAware
                     sprintf('Permissions too open: %s is %s (world-writable).', $path, $octal),
                     $path,
                     1,
-                    Severity::Warning,
+                    Severity::$Warning,
                     'custom',
                     ['perms' => $octal, 'path' => $path],
-                    Confidence::Medium
+                    Confidence::$Medium
                 );
             }
         }

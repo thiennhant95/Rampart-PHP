@@ -73,7 +73,7 @@ final class StandaloneRunner
         } catch (\Throwable $e) {
             $output->writeln(sprintf(
                 '<error>Internal error: %s: %s</error>',
-                $e::class,
+                get_class($e),
                 $e->getMessage()
             ));
 
@@ -98,18 +98,7 @@ final class StandaloneRunner
             $config['remediation'] = false;
         }
         $target = $this->target;
-        $ctx = new CheckContext(
-            $target,
-            $this->scanPaths($target),
-            $config,
-            $this->outputDir($target),
-            noAutoInstall: true,
-            failOn: $this->options['fail-on'] ?? 'error',
-            tier: $this->options['tier'] ?? ($config['tier'] ?? 'quality'),
-            minConfidence: $this->options['min-confidence'] ?? ($config['min_confidence'] ?? 'low'),
-            minSeverity: $this->options['min-severity'] ?? ($config['min_severity'] ?? 'info'),
-            packageVersion: PackageVersion::detect($toolRoot),
-        );
+        $ctx = new CheckContext($target, $this->scanPaths($target), $config, $this->outputDir($target), false, false, false, PackageVersion::detect($toolRoot), $this->options['fail-on'] ?? 'error', [], [], $this->options['tier'] ?? ($config['tier'] ?? 'quality'), $this->options['min-confidence'] ?? ($config['min_confidence'] ?? 'low'), true, $this->options['min-severity'] ?? ($config['min_severity'] ?? 'info'));
         $ctx->only = $this->split($this->options['only'] ?? 'custom');
         // The config key and the flag are the same setting, so they are merged
         // rather than one replacing the other. Before, the config key was never
@@ -237,7 +226,7 @@ final class StandaloneRunner
     private function parseArgv(array $argv): void
     {
         foreach ($argv as $arg) {
-            if (!str_starts_with($arg, '--')) {
+            if (strncmp($arg, '--', strlen('--')) !== 0) {
                 if ($this->target === '') {
                     $this->target = rtrim($arg, '/\\');
                 }
@@ -324,7 +313,7 @@ final class StandaloneRunner
     private function outputDir(string $target): string
     {
         $out = $this->options['output'] ?? 'reports/rampart';
-        if (preg_match('/^[A-Za-z]:[\\\\\\/]/', $out) === 1 || str_starts_with($out, '/')) {
+        if (preg_match('/^[A-Za-z]:[\\\\\\/]/', $out) === 1 || strncmp($out, '/', strlen('/')) === 0) {
             return rtrim($out, '/\\');
         }
 
@@ -383,14 +372,20 @@ final class StandaloneRunner
 
     private function reporterFor(string $format, OutputInterface $output): ?ReporterInterface
     {
-        return match ($format) {
-            'console' => new ConsoleReporter($output),
-            'json' => new JsonReporter(),
-            'html' => new HtmlReporter(),
-            'md' => new MarkdownReporter(),
-            'sarif' => new SarifReporter(),
-            default => null,
-        };
+        switch ($format) {
+            case 'console':
+                return new ConsoleReporter($output);
+            case 'json':
+                return new JsonReporter();
+            case 'html':
+                return new HtmlReporter();
+            case 'md':
+                return new MarkdownReporter();
+            case 'sarif':
+                return new SarifReporter();
+            default:
+                return null;
+        }
     }
 
     private function printHelp(OutputInterface $output): void

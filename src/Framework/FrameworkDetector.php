@@ -24,6 +24,8 @@ final class FrameworkDetector
         'symfony/framework-bundle' => ['symfony'],
         'symfony/symfony' => ['symfony'],
         'laravel/framework' => ['laravel'],
+        'phalcon/cphalcon' => ['phalcon'],
+        'phalcon/incubator' => ['phalcon'],
     ];
 
     public function detect(string $basePath, ?string $override = null): FrameworkProfile
@@ -37,7 +39,7 @@ final class FrameworkDetector
 
         $detected = $this->fromComposer($basePath) ?? $this->fromMarkers($basePath);
 
-        return FrameworkProfile::for($detected ?? Framework::PLAIN);
+        return FrameworkProfile::for($detected ?? Framework::$PLAIN);
     }
 
     private function fromComposer(string $basePath): ?Framework
@@ -79,23 +81,34 @@ final class FrameworkDetector
         $base = rtrim($basePath, '/\\');
 
         if (is_file($base . '/spark') && is_dir($base . '/app/Config')) {
-            return Framework::CODEIGNITER4;
+            return Framework::$CODEIGNITER4;
         }
         if (is_dir($base . '/fuel/app')) {
-            return Framework::FUELPHP;
+            return Framework::$FUELPHP;
         }
         if (is_file($base . '/config/bundles.php') || is_file($base . '/src/Kernel.php')) {
-            return Framework::SYMFONY;
+            return Framework::$SYMFONY;
         }
         if (is_dir($base . '/routes') && is_dir($base . '/app/Http')) {
-            return Framework::LARAVEL;
+            return Framework::$LARAVEL;
+        }
+        if (is_dir($base . '/app/controllers') && is_file($base . '/public/index.php')) {
+            // Local file under the operator-supplied target root, never request data.
+            // rampart-ignore-next-line OWASP_PATH_TRAVERSAL,OWASP_SSRF
+            $index = (string) file_get_contents($base . '/public/index.php');
+            if (stripos($index, 'Phalcon') !== false) {
+                return Framework::$PHALCON;
+            }
+        }
+        if (is_dir($base . '/app/controllers') && is_file($base . '/app/config/config.php')) {
+            return Framework::$PHALCON;
         }
         if (is_file($base . '/public/index.php') && is_dir($base . '/src')) {
             // Local file under the operator-supplied target root, never request data.
             // rampart-ignore-next-line OWASP_PATH_TRAVERSAL,OWASP_SSRF
             $index = (string) file_get_contents($base . '/public/index.php');
             if (stripos($index, 'Slim') !== false) {
-                return Framework::SLIM;
+                return Framework::$SLIM;
             }
         }
 

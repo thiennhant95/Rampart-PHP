@@ -2536,7 +2536,7 @@ final class AnalyzerMetricsTest extends TestCase
      * @param Closure(): object $factory
      * @param array<string, string> $files
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('corpus')]
+    /** @dataProvider corpus */
     public function testCorpusCase(Closure $factory, array $files, ?string $expectedRule): void
     {
         $paths = $this->materialize($files);

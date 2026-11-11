@@ -17,6 +17,7 @@ where source, routes, views, tests and public files live.
 | CodeIgniter 4 | `codeigniter4/framework`, `codeigniter4/appstarter` | `spark` + `app/Config/` |
 | FuelPHP | `fuel/fuel`, `fuelphp/fuel` | `fuel/app/` |
 | Symfony | `symfony/framework-bundle`, `symfony/symfony` | `config/bundles.php`, `src/Kernel.php` |
+| Phalcon | `phalcon/cphalcon`, `phalcon/incubator` | `app/controllers/` + `public/index.php` referencing Phalcon |
 | Laravel | `laravel/framework` | `routes/` + `app/Http/` |
 
 ## Layouts
@@ -28,6 +29,7 @@ where source, routes, views, tests and public files live.
 | CodeIgniter 4 | `app`, `tests` | `app/Config/Routes.php`, `app/Config/*Routes*.php` | `app/Views` |
 | FuelPHP | `fuel/app`, `fuel/core` | `fuel/app/config/routes.php` | `fuel/app/views` |
 | Symfony | `src`, `config`, `templates`, `tests` | `config/routes.php`, `config/routes.yaml`, `config/routes/*` | `templates`, `views` |
+| Phalcon | `app`, `src`, `config`, `tests` | `app/config/routes.php`, `app/config/router.php`, `public/index.php` | `app/views`, `views` |
 | Laravel | `app`, `routes`, `database`, `config`, `tests` | `routes/*.php` | `resources/views` |
 
 `--path=` overrides the scan paths; route and view collection still follows the
@@ -52,7 +54,13 @@ both.
   protected by a controller action check **or** by a matching
   `config/packages/security.yaml` `access_control` rule granting a `ROLE_*`.
   `IS_AUTHENTICATED*` counts as authentication, not authorization.
+- **Phalcon** — the route target (`Admin::store`) is resolved to
+  `app/controllers/AdminController.php`; `beforeExecuteRoute()` /
+  `beforeDispatch()` / `initialize()` / `onConstruct()` containing
+  `Acl`/`isAllowed`, `Auth::`, `currentUser`, role or permission checks counts
+  as auth. The parent chain (`ControllerBase`) is followed up to 3 levels.
+  `$router->add(...)->via(['POST'])` and `addPost()` are both understood.
 
-Only `POST` / `PUT` / `PATCH` / `DELETE` (and Slim/FuelPHP `any`) are
+Only `POST` / `PUT` / `PATCH` / `DELETE` (and Slim/FuelPHP/Phalcon `any`) are
 considered. Auth is matched on middleware/filter names, never on the URI, so
 `/admin/users` without a middleware is still reported.

@@ -12,15 +12,27 @@ namespace Rampart\Php\Analysis;
 final class ConstantValue
 {
     /**
+     * @readonly
+     */
+    public string $value;
+    /**
+     * @readonly
+     */
+    public string $confidence = 'exact';
+    /**
+     * @var list<array{kind: string, detail: string, file: (string | null), line: (int | null)}>
+     * @readonly
+     */
+    public array $provenance = [];
+    /**
      * @param list<array{kind: string, detail: string, file: string|null, line: int|null}> $provenance
      */
-    public function __construct(
-        public readonly string $value,
-        public readonly string $confidence = 'exact',
-        public readonly array $provenance = [],
-    ) {
+    public function __construct(string $value, string $confidence = 'exact', array $provenance = [])
+    {
+        $this->value = $value;
+        $this->confidence = $confidence;
+        $this->provenance = $provenance;
     }
-
     /**
      * @param array{kind: string, detail: string, file: string|null, line: int|null} $step
      */

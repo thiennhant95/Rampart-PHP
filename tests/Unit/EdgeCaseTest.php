@@ -29,14 +29,7 @@ final class EdgeCaseTest extends TestCase
 
     public function testEmptyProjectDoesNotCrash(): void
     {
-        $ctx = new CheckContext(
-            $this->tempDir,
-            [],
-            ['auto_install_tools' => false],
-            $this->tempDir . '/reports',
-            noCache: true,
-            only: ['custom'],
-        );
+        $ctx = new CheckContext($this->tempDir, [], ['auto_install_tools' => false], $this->tempDir . '/reports', true, false, false, '0.0.0', 'error', ['custom']);
 
         $runner = new CheckRunner($ctx);
         $checkers = $runner->buildCheckers();
@@ -49,14 +42,7 @@ final class EdgeCaseTest extends TestCase
 
     public function testNonExistentPathRunsGracefully(): void
     {
-        $ctx = new CheckContext(
-            $this->tempDir,
-            ['does-not-exist'],
-            ['auto_install_tools' => false],
-            $this->tempDir . '/reports',
-            noCache: true,
-            only: ['custom'],
-        );
+        $ctx = new CheckContext($this->tempDir, ['does-not-exist'], ['auto_install_tools' => false], $this->tempDir . '/reports', true, false, false, '0.0.0', 'error', ['custom']);
 
         $runner = new CheckRunner($ctx);
         $results = $runner->run($runner->buildCheckers());
@@ -68,29 +54,29 @@ final class EdgeCaseTest extends TestCase
 
     public function testShouldFailNeverTrueForFailOnNone(): void
     {
-        $runner = new CheckRunner(new CheckContext($this->tempDir, ['app'], [], $this->tempDir . '/reports', failOn: 'none'));
+        $runner = new CheckRunner(new CheckContext($this->tempDir, ['app'], [], $this->tempDir . '/reports', false, false, false, '0.0.0', 'none'));
 
-        self::assertFalse($runner->shouldFail([$this->resultWithIssue(Severity::Critical)]));
+        self::assertFalse($runner->shouldFail([$this->resultWithIssue(Severity::$Critical)]));
         self::assertFalse($runner->shouldFail([]));
     }
 
     public function testShouldFailFalseForEmptyResults(): void
     {
-        $runner = new CheckRunner(new CheckContext($this->tempDir, ['app'], [], $this->tempDir . '/reports', failOn: 'error'));
+        $runner = new CheckRunner(new CheckContext($this->tempDir, ['app'], [], $this->tempDir . '/reports', false, false, false, '0.0.0', 'error'));
 
         self::assertFalse($runner->shouldFail([]));
     }
 
     public function testSeverityFromStringDefaultsOnGarbage(): void
     {
-        self::assertSame(Severity::Error, Severity::fromString('garbage'));
-        self::assertSame(Severity::Error, Severity::fromString(''));
+        self::assertSame(Severity::$Error, Severity::fromString('garbage'));
+        self::assertSame(Severity::$Error, Severity::fromString(''));
     }
 
     public function testConfidenceFromStringDefaultsOnGarbage(): void
     {
-        self::assertSame(Confidence::Low, Confidence::fromString('garbage'));
-        self::assertSame(Confidence::Low, Confidence::fromString(''));
+        self::assertSame(Confidence::$Low, Confidence::fromString('garbage'));
+        self::assertSame(Confidence::$Low, Confidence::fromString(''));
     }
 
     public function testResolvePathHandlesAbsoluteWindowsPath(): void
@@ -119,10 +105,10 @@ final class EdgeCaseTest extends TestCase
         self::assertSame('', $issue->message);
         self::assertNull($issue->file);
         self::assertNull($issue->line);
-        self::assertSame(Severity::Error, $issue->severity);
+        self::assertSame(Severity::$Error, $issue->severity);
         self::assertSame('custom', $issue->source);
         self::assertSame([], $issue->metadata);
-        self::assertSame(Confidence::High, $issue->confidence);
+        self::assertSame(Confidence::$High, $issue->confidence);
     }
 
     private function resultWithIssue(Severity $severity): CheckResult

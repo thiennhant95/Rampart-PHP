@@ -182,9 +182,9 @@ final class OwaspOpenRedirectAnalyzer extends AbstractAnalyzer
                 sprintf('Potential open redirect: user-controlled target flows into %s.', $label),
                 $file,
                 $call->getStartLine(),
-                Severity::Error,
+                Severity::$Error,
                 ['sink' => $label, 'flow' => $this->traceFor($target, $call, $nodes, $label)->toMetadata()],
-                $this->isDirectTarget($target) ? Confidence::High : Confidence::Medium
+                $this->isDirectTarget($target) ? Confidence::$High : Confidence::$Medium
             );
         }
 

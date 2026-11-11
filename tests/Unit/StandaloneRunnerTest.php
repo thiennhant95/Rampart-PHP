@@ -239,7 +239,7 @@ final class StandaloneRunnerTest extends TestCase
         }
         $missing = array_values(array_filter(
             $run(['--coverage']),
-            static fn (string $rule): bool => str_starts_with($rule, 'MISSING_')
+            static fn (string $rule): bool => strncmp($rule, 'MISSING_', strlen('MISSING_')) === 0
         ));
         self::assertNotSame([], $missing, '--coverage did not bring back missing-test findings.');
     }

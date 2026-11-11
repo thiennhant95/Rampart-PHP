@@ -74,10 +74,10 @@ final class DeadCodeAnalyzer implements ScanContextAware
                     sprintf('Private/protected method %s::%s() has no reference in its own file (possible dead code).', $className, $methodName),
                     $file,
                     $method->getStartLine(),
-                    Severity::Info,
+                    Severity::$Info,
                     'custom',
                     ['class' => $className, 'method' => $methodName],
-                    Confidence::Low
+                    Confidence::$Low
                 );
             }
         }
@@ -103,7 +103,7 @@ final class DeadCodeAnalyzer implements ScanContextAware
             return false;
         }
 
-        if (str_starts_with($name, '__')) {
+        if (strncmp($name, '__', strlen('__')) === 0) {
             return false;
         }
 
@@ -111,7 +111,7 @@ final class DeadCodeAnalyzer implements ScanContextAware
         if (preg_match('/^get[A-Z].*Attribute$/', $name) === 1) {
             return false;
         }
-        if (str_starts_with($name, 'scope') && strlen($name) > 5) {
+        if (strncmp($name, 'scope', strlen('scope')) === 0 && strlen($name) > 5) {
             return false;
         }
 

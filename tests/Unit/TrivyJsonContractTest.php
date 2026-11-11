@@ -82,13 +82,13 @@ final class TrivyJsonContractTest extends TestCase
         self::assertSame('AVD-DS-002', $issues[0]->rule);
         self::assertSame('Dockerfile', $issues[0]->file);
         self::assertSame(5, $issues[0]->line);
-        self::assertSame(Severity::Error, $issues[0]->severity); // HIGH -> Error
+        self::assertSame(Severity::$Error, $issues[0]->severity); // HIGH -> Error
         self::assertSame('trivy', $issues[0]->source);
         self::assertSame('HIGH', $issues[0]->metadata['severity']);
 
         self::assertSame('KSV014', $issues[1]->rule);
         self::assertSame(12, $issues[1]->line);
-        self::assertSame(Severity::Warning, $issues[1]->severity); // MEDIUM -> Warning
+        self::assertSame(Severity::$Warning, $issues[1]->severity); // MEDIUM -> Warning
     }
 
     public function testParsesSecretsWithRuleIdAndStartLine(): void
@@ -123,12 +123,12 @@ final class TrivyJsonContractTest extends TestCase
         self::assertSame('generic-secret', $issues[0]->rule);
         self::assertSame('config/app.php', $issues[0]->file);
         self::assertSame(10, $issues[0]->line);
-        self::assertSame(Severity::Critical, $issues[0]->severity);
+        self::assertSame(Severity::$Critical, $issues[0]->severity);
         self::assertSame('secret', $issues[0]->metadata['type']);
 
         self::assertSame('TRIVY_SECRET', $issues[1]->rule);
         self::assertNull($issues[1]->line, 'StartLine 0 must become null-line');
-        self::assertSame(Severity::Error, $issues[1]->severity);
+        self::assertSame(Severity::$Error, $issues[1]->severity);
     }
 
     public function testParsesMixedMisconfigAndSecretInSameTarget(): void
@@ -173,11 +173,11 @@ final class TrivyJsonContractTest extends TestCase
 
         $issues = $this->parse($json);
 
-        self::assertSame(Severity::Critical, $issues[0]->severity);
-        self::assertSame(Severity::Error, $issues[1]->severity);
-        self::assertSame(Severity::Warning, $issues[2]->severity);
-        self::assertSame(Severity::Info, $issues[3]->severity);
-        self::assertSame(Severity::Info, $issues[4]->severity);
+        self::assertSame(Severity::$Critical, $issues[0]->severity);
+        self::assertSame(Severity::$Error, $issues[1]->severity);
+        self::assertSame(Severity::$Warning, $issues[2]->severity);
+        self::assertSame(Severity::$Info, $issues[3]->severity);
+        self::assertSame(Severity::$Info, $issues[4]->severity);
     }
 
     public function testEmptyResultsProduceNoIssues(): void

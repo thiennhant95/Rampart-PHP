@@ -68,7 +68,7 @@ final class LaravelTaintAnalyzer implements ScanContextAware
                             sprintf('Tainted user input is interpolated into raw query call ->%s().', $method),
                             $file,
                             $call->getStartLine(),
-                            Severity::Error,
+                            Severity::$Error,
                             'custom',
                             ['method' => $method]
                         );

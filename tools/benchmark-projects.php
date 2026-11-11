@@ -58,15 +58,15 @@ foreach (array_slice($argv, 1) as $argument) {
         $update = true;
         continue;
     }
-    if (str_starts_with($argument, '--baseline=')) {
+    if (strncmp($argument, '--baseline=', strlen('--baseline=')) === 0) {
         $baselinePath = substr($argument, 11);
         continue;
     }
-    if (str_starts_with($argument, '--diff=')) {
+    if (strncmp($argument, '--diff=', strlen('--diff=')) === 0) {
         $diffPath = substr($argument, 7);
         continue;
     }
-    if (!str_starts_with($argument, '--') && $manifestPath === null) {
+    if (strncmp($argument, '--', strlen('--')) !== 0 && $manifestPath === null) {
         $manifestPath = $argument;
         continue;
     }

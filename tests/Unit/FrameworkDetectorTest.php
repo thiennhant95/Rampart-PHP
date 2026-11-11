@@ -45,7 +45,7 @@ final class FrameworkDetectorTest extends TestCase
     {
         $profile = (new FrameworkDetector())->detect($this->dir);
 
-        self::assertSame(Framework::PLAIN, $profile->framework);
+        self::assertSame(Framework::$PLAIN, $profile->framework);
         self::assertContains('src', $profile->scanPaths);
     }
 
@@ -53,7 +53,7 @@ final class FrameworkDetectorTest extends TestCase
     {
         $this->composer(['slim/slim' => '^4.0']);
 
-        self::assertSame(Framework::SLIM, (new FrameworkDetector())->detect($this->dir)->framework);
+        self::assertSame(Framework::$SLIM, (new FrameworkDetector())->detect($this->dir)->framework);
     }
 
     public function testCodeIgniterFromMarkers(): void
@@ -61,14 +61,14 @@ final class FrameworkDetectorTest extends TestCase
         touch($this->dir . DIRECTORY_SEPARATOR . 'spark');
         @mkdir($this->dir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Config', 0777, true);
 
-        self::assertSame(Framework::CODEIGNITER4, (new FrameworkDetector())->detect($this->dir)->framework);
+        self::assertSame(Framework::$CODEIGNITER4, (new FrameworkDetector())->detect($this->dir)->framework);
     }
 
     public function testFuelPhpFromDirectory(): void
     {
         @mkdir($this->dir . DIRECTORY_SEPARATOR . 'fuel' . DIRECTORY_SEPARATOR . 'app', 0777, true);
 
-        self::assertSame(Framework::FUELPHP, (new FrameworkDetector())->detect($this->dir)->framework);
+        self::assertSame(Framework::$FUELPHP, (new FrameworkDetector())->detect($this->dir)->framework);
     }
 
     public function testSymfonyFromMarkers(): void
@@ -76,20 +76,36 @@ final class FrameworkDetectorTest extends TestCase
         @mkdir($this->dir . DIRECTORY_SEPARATOR . 'config', 0777, true);
         file_put_contents($this->dir . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'bundles.php', '<?php return [];');
 
-        self::assertSame(Framework::SYMFONY, (new FrameworkDetector())->detect($this->dir)->framework);
+        self::assertSame(Framework::$SYMFONY, (new FrameworkDetector())->detect($this->dir)->framework);
     }
 
     public function testLaravelFromComposer(): void
     {
         $this->composer(['laravel/framework' => '^11.0']);
 
-        self::assertSame(Framework::LARAVEL, (new FrameworkDetector())->detect($this->dir)->framework);
+        self::assertSame(Framework::$LARAVEL, (new FrameworkDetector())->detect($this->dir)->framework);
+    }
+
+    public function testPhalconFromComposer(): void
+    {
+        $this->composer(['phalcon/cphalcon' => '^5.0']);
+
+        self::assertSame(Framework::$PHALCON, (new FrameworkDetector())->detect($this->dir)->framework);
+    }
+
+    public function testPhalconFromMarkers(): void
+    {
+        @mkdir($this->dir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'controllers', 0777, true);
+        @mkdir($this->dir . DIRECTORY_SEPARATOR . 'public', 0777, true);
+        file_put_contents($this->dir . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'index.php', '<?php new Phalcon\Mvc\Application();');
+
+        self::assertSame(Framework::$PHALCON, (new FrameworkDetector())->detect($this->dir)->framework);
     }
 
     public function testOverrideWins(): void
     {
         $this->composer(['laravel/framework' => '^11.0']);
 
-        self::assertSame(Framework::PLAIN, (new FrameworkDetector())->detect($this->dir, 'plain')->framework);
+        self::assertSame(Framework::$PLAIN, (new FrameworkDetector())->detect($this->dir, 'plain')->framework);
     }
 }

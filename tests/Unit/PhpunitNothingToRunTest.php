@@ -23,6 +23,7 @@ final class PhpunitNothingToRunTest extends TestCase
     private function foundNothingToRun(string $output): bool
     {
         $method = new ReflectionMethod(PhpunitChecker::class, 'foundNothingToRun');
+        $method->setAccessible(true);
 
         return (bool) $method->invoke(new PhpunitChecker(), $output);
     }

@@ -1442,7 +1442,7 @@ final class HtmlReporter implements ReporterInterface
                 continue;
             }
             foreach ($result->issues as $issue) {
-                if (!str_starts_with($issue->rule, 'OWASP_')) {
+                if (strncmp($issue->rule, 'OWASP_', strlen('OWASP_')) !== 0) {
                     continue;
                 }
                 if (!isset($out[$issue->rule])) {
@@ -1708,12 +1708,16 @@ final class HtmlReporter implements ReporterInterface
 
     private function confidenceScoreLabel(string $confidence): string
     {
-        return match (strtolower($confidence)) {
-            'high' => '1.0',
-            'medium' => '0.5',
-            'low' => '0.25',
-            default => '?',
-        };
+        switch (strtolower($confidence)) {
+            case 'high':
+                return '1.0';
+            case 'medium':
+                return '0.5';
+            case 'low':
+                return '0.25';
+            default:
+                return '?';
+        }
     }
 
     /**
@@ -1772,7 +1776,10 @@ final class HtmlReporter implements ReporterInterface
         return $html . '</div>' . "\n";
     }
 
-    private function escape(mixed $value): string
+    /**
+     * @param mixed $value
+     */
+    private function escape($value): string
     {
         return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
     }
@@ -1820,7 +1827,7 @@ final class HtmlReporter implements ReporterInterface
             return $normalized;
         }
         $base = rtrim(str_replace('\\', '/', $ctx->basePath), '/');
-        if (str_starts_with($normalized, $base . '/')) {
+        if (strncmp($normalized, $base . '/', strlen($base . '/')) === 0) {
             return substr($normalized, strlen($base) + 1);
         }
 
@@ -1884,7 +1891,7 @@ final class HtmlReporter implements ReporterInterface
                 continue;
             }
             foreach ($result->issues as $issue) {
-                if (str_starts_with($issue->rule, 'OWASP_')) {
+                if (strncmp($issue->rule, 'OWASP_', strlen('OWASP_')) === 0) {
                     $out[$issue->rule][] = [
                         'file' => $issue->file ?? '(no file)',
                         'line' => $issue->line,
@@ -1915,10 +1922,10 @@ final class HtmlReporter implements ReporterInterface
                 'duration' => $result->duration,
                 'summary' => $result->summary,
                 'counts' => [
-                    'critical' => $this->countBySeverity($result, Severity::Critical),
-                    'error' => $this->countBySeverity($result, Severity::Error),
-                    'warning' => $this->countBySeverity($result, Severity::Warning),
-                    'info' => $this->countBySeverity($result, Severity::Info),
+                    'critical' => $this->countBySeverity($result, Severity::$Critical),
+                    'error' => $this->countBySeverity($result, Severity::$Error),
+                    'warning' => $this->countBySeverity($result, Severity::$Warning),
+                    'info' => $this->countBySeverity($result, Severity::$Info),
                 ],
                 'files' => $this->groupByFile($result),
                 'rules' => $this->ruleCounts($result),
@@ -2022,11 +2029,11 @@ final class HtmlReporter implements ReporterInterface
             $summary['total_issues'] += count($result->issues);
             foreach ($result->issues as $issue) {
                 $severity = $issue->severity;
-                if ($severity === Severity::Critical) {
+                if ($severity === Severity::$Critical) {
                     ++$summary['critical'];
-                } elseif ($severity === Severity::Error) {
+                } elseif ($severity === Severity::$Error) {
                     ++$summary['error'];
-                } elseif ($severity === Severity::Warning) {
+                } elseif ($severity === Severity::$Warning) {
                     ++$summary['warning'];
                 } else {
                     ++$summary['info'];

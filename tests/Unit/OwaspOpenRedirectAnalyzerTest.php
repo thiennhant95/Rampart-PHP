@@ -41,7 +41,7 @@ final class OwaspOpenRedirectAnalyzerTest extends TestCase
         $issues = (new OwaspOpenRedirectAnalyzer())->analyze([$file]);
 
         self::assertSame('OWASP_OPEN_REDIRECT', $this->rules($issues)[0] ?? null);
-        self::assertSame(Severity::Error, $issues[0]->severity ?? null);
+        self::assertSame(Severity::$Error, $issues[0]->severity ?? null);
     }
 
     public function testFlagsRedirectAwayWithVariable(): void
@@ -54,7 +54,7 @@ final class OwaspOpenRedirectAnalyzerTest extends TestCase
         $issues = (new OwaspOpenRedirectAnalyzer())->analyze([$file]);
 
         self::assertSame('OWASP_OPEN_REDIRECT', $this->rules($issues)[0] ?? null);
-        self::assertSame(Severity::Error, $issues[0]->severity ?? null);
+        self::assertSame(Severity::$Error, $issues[0]->severity ?? null);
     }
 
     public function testFlagsRedirectWithConcatTarget(): void
@@ -222,7 +222,7 @@ final class OwaspOpenRedirectAnalyzerTest extends TestCase
 
         $issues = (new OwaspOpenRedirectAnalyzer())->analyze([$file]);
 
-        self::assertSame(Confidence::High, $issues[0]->confidence ?? null);
+        self::assertSame(Confidence::$High, $issues[0]->confidence ?? null);
     }
 
     public function testMethodCallTargetIsMediumConfidence(): void
@@ -235,7 +235,7 @@ final class OwaspOpenRedirectAnalyzerTest extends TestCase
         $issues = (new OwaspOpenRedirectAnalyzer())->analyze([$file]);
 
         self::assertSame('OWASP_OPEN_REDIRECT', $this->rules($issues)[0] ?? null);
-        self::assertSame(Confidence::Medium, $issues[0]->confidence ?? null);
+        self::assertSame(Confidence::$Medium, $issues[0]->confidence ?? null);
     }
 
     public function testFlagsIntendedWithRequestInput(): void

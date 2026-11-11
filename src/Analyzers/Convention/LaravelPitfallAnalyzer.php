@@ -53,7 +53,7 @@ final class LaravelPitfallAnalyzer implements ScanContextAware
         $issues = [];
         $finder = new CountingNodeFinder();
         $normalized = str_replace('\\', '/', $file);
-        $isConfig = str_contains($normalized, '/config/');
+        $isConfig = strpos($normalized, '/config/') !== false;
         $isTest = $this->isTestFile($file);
 
         foreach ($finder->findInstanceOf($ast, Node\Expr\FuncCall::class) as $call) {
@@ -68,10 +68,10 @@ final class LaravelPitfallAnalyzer implements ScanContextAware
                     'env() should only be called from config files; use config() helper elsewhere.',
                     $file,
                     $call->getStartLine(),
-                    Severity::Warning,
+                    Severity::$Warning,
                     'custom',
                     ['function' => 'env'],
-                    Confidence::Medium
+                    Confidence::$Medium
                 );
             }
 
@@ -81,10 +81,10 @@ final class LaravelPitfallAnalyzer implements ScanContextAware
                     sprintf('Debug call %s() left in code.', $name),
                     $file,
                     $call->getStartLine(),
-                    Severity::Warning,
+                    Severity::$Warning,
                     'custom',
                     ['function' => $name],
-                    Confidence::Medium
+                    Confidence::$Medium
                 );
             }
 
@@ -94,10 +94,10 @@ final class LaravelPitfallAnalyzer implements ScanContextAware
                     'sleep() should not be used in tests; prefer mocking time (e.g. Carbon::setTestNow).',
                     $file,
                     $call->getStartLine(),
-                    Severity::Warning,
+                    Severity::$Warning,
                     'custom',
                     ['function' => 'sleep'],
-                    Confidence::Medium
+                    Confidence::$Medium
                 );
             }
         }
@@ -109,6 +109,6 @@ final class LaravelPitfallAnalyzer implements ScanContextAware
     {
         $normalized = str_replace('\\', '/', $file);
 
-        return str_contains($normalized, '/tests/') || str_starts_with($normalized, 'tests/');
+        return strpos($normalized, '/tests/') !== false || strncmp($normalized, 'tests/', strlen('tests/')) === 0;
     }
 }

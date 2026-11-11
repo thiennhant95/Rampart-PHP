@@ -62,7 +62,7 @@ final class RuleDocsTest extends TestCase
         foreach (RuleIds::owaspRules() as $rule) {
             $row = null;
             foreach ($rows as $candidate) {
-                if (str_starts_with($candidate, '| `' . $rule . '`')) {
+                if (strncmp($candidate, '| `' . $rule . '`', strlen('| `' . $rule . '`')) === 0) {
                     $row = $candidate;
                     break;
                 }
@@ -123,7 +123,7 @@ final class RuleDocsTest extends TestCase
                 continue;
             }
             foreach ($m[1] as $id) {
-                if (str_starts_with($id, 'analyzers') || !RuleIds::isOwasp($id)) {
+                if (strncmp($id, 'analyzers', strlen('analyzers')) === 0 || !RuleIds::isOwasp($id)) {
                     continue;
                 }
                 $counts[$id] = ($counts[$id] ?? 0) + 1;
@@ -159,7 +159,7 @@ final class RuleDocsTest extends TestCase
         $rows = [];
         foreach (explode("\n", $section) as $line) {
             $line = trim($line);
-            if (str_starts_with($line, '| ') && !str_contains($line, '|---')) {
+            if (strncmp($line, '| ', strlen('| ')) === 0 && strpos($line, '|---') === false) {
                 $rows[] = $line;
             }
         }

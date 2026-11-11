@@ -10,17 +10,31 @@ namespace Rampart\Php\Fixer;
 final class FixResult
 {
     /**
+     * @var int
+     * @readonly
+     */
+    public int $filesFixed;
+    /**
+     * @var list<string>
+     * @readonly
+     */
+    public array $errors;
+    /**
+     * @var string
+     * @readonly
+     */
+    public string $output;
+    /**
      * @param int $filesFixed Number of files the fixer reported as fixed.
      * @param list<string> $errors Human-readable failure messages, if any.
      * @param string $output Raw output captured from the underlying tool.
      */
-    public function __construct(
-        public readonly int $filesFixed,
-        public readonly array $errors,
-        public readonly string $output,
-    ) {
+    public function __construct(int $filesFixed, array $errors, string $output)
+    {
+        $this->filesFixed = $filesFixed;
+        $this->errors = $errors;
+        $this->output = $output;
     }
-
     /**
      * True when no errors were encountered.
      */

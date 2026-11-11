@@ -85,7 +85,7 @@ final class MiddlewareRegistry implements ScanContextAware
             if (strtolower((string) pathinfo($normalized, PATHINFO_BASENAME)) !== strtolower($short . '.php')) {
                 continue;
             }
-            if (str_contains(strtolower($normalized), '/middleware/')) {
+            if (strpos(strtolower($normalized), '/middleware/') !== false) {
                 return $file;
             }
             $fallback ??= $file;
@@ -98,15 +98,15 @@ final class MiddlewareRegistry implements ScanContextAware
     {
         $normalized = str_replace('\\', '/', $file);
 
-        return str_ends_with($normalized, 'Http/Kernel.php')
-            || str_ends_with($normalized, 'Http\\Kernel.php');
+        return substr_compare($normalized, 'Http/Kernel.php', -strlen('Http/Kernel.php')) === 0
+            || substr_compare($normalized, 'Http\\Kernel.php', -strlen('Http\\Kernel.php')) === 0;
     }
 
     private function isAppBootstrap(string $file): bool
     {
         $normalized = str_replace('\\', '/', $file);
 
-        return str_ends_with($normalized, 'bootstrap/app.php');
+        return substr_compare($normalized, 'bootstrap/app.php', -strlen('bootstrap/app.php')) === 0;
     }
 
     private function collectFromFile(string $file): void
@@ -216,7 +216,7 @@ final class MiddlewareRegistry implements ScanContextAware
      */
     private function resolveName(string $name, array $uses, ?string $namespace): string
     {
-        if (str_starts_with($name, '\\')) {
+        if (strncmp($name, '\\', strlen('\\')) === 0) {
             return ltrim($name, '\\');
         }
         $pos = strpos($name, '\\');

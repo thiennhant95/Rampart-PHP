@@ -107,13 +107,18 @@ final class ToolInstaller
      */
     public function hint(string $checkerName): string
     {
-        return match ($checkerName) {
-            'phpcs' => 'composer require --dev "squizlabs/php_codesniffer:^3.13 || ^4.0"',
-            'phpstan' => 'composer require --dev "phpstan/phpstan:^2.0"',
-            'phpunit' => 'composer require --dev "phpunit/phpunit:^10.5 || ^11.0"',
-            'trivy' => 'download from https://github.com/aquasecurity/trivy/releases or run this tool online',
-            default => 'install the missing tool',
-        };
+        switch ($checkerName) {
+            case 'phpcs':
+                return 'composer require --dev "squizlabs/php_codesniffer:^3.13 || ^4.0"';
+            case 'phpstan':
+                return 'composer require --dev "phpstan/phpstan:^2.0"';
+            case 'phpunit':
+                return 'composer require --dev "phpunit/phpunit:^10.5 || ^11.0"';
+            case 'trivy':
+                return 'download from https://github.com/aquasecurity/trivy/releases or run this tool online';
+            default:
+                return 'install the missing tool';
+        }
     }
 
     private function installComposerTool(string $package): bool

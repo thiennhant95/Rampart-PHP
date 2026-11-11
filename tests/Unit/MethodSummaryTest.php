@@ -182,7 +182,7 @@ final class MethodSummaryTest extends TestCase
         $paths = $this->project($files);
         $controllerPath = null;
         foreach ($paths as $path) {
-            if (str_ends_with($path, 'UserController.php')) {
+            if (substr_compare($path, 'UserController.php', -strlen('UserController.php')) === 0) {
                 $controllerPath = $path;
             }
         }
@@ -234,7 +234,7 @@ final class MethodSummaryTest extends TestCase
         ]);
         $controllerPath = null;
         foreach ($paths as $path) {
-            if (str_ends_with($path, 'UserController.php')) {
+            if (substr_compare($path, 'UserController.php', -strlen('UserController.php')) === 0) {
                 $controllerPath = $path;
             }
         }
@@ -348,7 +348,7 @@ final class MethodSummaryTest extends TestCase
         ]);
         $controllerPath = null;
         foreach ($paths as $path) {
-            if (str_ends_with($path, 'UserController.php')) {
+            if (substr_compare($path, 'UserController.php', -strlen('UserController.php')) === 0) {
                 $controllerPath = $path;
             }
         }
@@ -628,7 +628,7 @@ final class MethodSummaryTest extends TestCase
         ]);
         $controllerPath = null;
         foreach ($paths as $path) {
-            if (str_ends_with($path, 'UserController.php')) {
+            if (substr_compare($path, 'UserController.php', -strlen('UserController.php')) === 0) {
                 $controllerPath = $path;
             }
         }
@@ -721,7 +721,7 @@ final class MethodSummaryTest extends TestCase
         ]);
         $controllerPath = null;
         foreach ($paths as $path) {
-            if (str_ends_with($path, 'UserController.php')) {
+            if (substr_compare($path, 'UserController.php', -strlen('UserController.php')) === 0) {
                 $controllerPath = $path;
             }
         }
@@ -804,7 +804,7 @@ final class MethodSummaryTest extends TestCase
         ]);
         $controllerPath = null;
         foreach ($paths as $path) {
-            if (str_ends_with($path, 'UserController.php')) {
+            if (substr_compare($path, 'UserController.php', -strlen('UserController.php')) === 0) {
                 $controllerPath = $path;
             }
         }

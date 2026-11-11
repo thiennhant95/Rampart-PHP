@@ -52,7 +52,7 @@ final class ConstantValueResolverTest extends TestCase
         $useScope = $scope->forNode($call);
         $value = $resolver->resolve($arg->value, $useScope, $call->getStartLine());
 
-        return $value?->value;
+        return ($value2 = $value) ? $value2->value : null;
     }
 
     public function testResolvesStringLiteral(): void
@@ -154,7 +154,7 @@ final class ConstantValueResolverTest extends TestCase
         self::assertInstanceOf(Node\Expr\ArrayItem::class, $classItem);
         $value = (new ConstantValueResolver())->resolve($classItem->value, $scope, $calls[0]->getStartLine());
 
-        self::assertSame('App\\Http\\Controllers\\C', $value?->value);
+        self::assertSame('App\\Http\\Controllers\\C', ($value2 = $value) ? $value2->value : null);
     }
 
     public function testResolvesDirMagic(): void
@@ -173,7 +173,7 @@ final class ConstantValueResolverTest extends TestCase
         $scope = ConstantScope::forFile($nodes, 'routes/web.php');
         $value = (new ConstantValueResolver())->resolve($include->expr, $scope, $include->getStartLine());
 
-        self::assertSame('routes/admin.php', str_replace('\\', '/', (string) $value?->value));
+        self::assertSame('routes/admin.php', str_replace('\\', '/', (string) (($value2 = $value) ? $value2->value : null)));
     }
 
     public function testUnassignedVariableIsNull(): void
@@ -256,7 +256,7 @@ final class ConstantValueResolverTest extends TestCase
         $fnScope = $scope->forNode($call);
         $value = (new ConstantValueResolver())->resolve($arg->value, $fnScope, $call->getStartLine());
 
-        self::assertSame('App\\Http\\Controllers\\C@show', $value?->value);
+        self::assertSame('App\\Http\\Controllers\\C@show', ($value2 = $value) ? $value2->value : null);
     }
 
     public function testRequestCallIsNull(): void
@@ -340,6 +340,6 @@ final class ConstantValueResolverTest extends TestCase
         $scope = ConstantScope::forFile($nodes, 'app/Providers/RouteServiceProvider.php');
         $value = (new ConstantValueResolver())->resolve($include->expr, $scope, $include->getStartLine());
 
-        self::assertSame('routes/api.php', $value?->value);
+        self::assertSame('routes/api.php', ($value2 = $value) ? $value2->value : null);
     }
 }

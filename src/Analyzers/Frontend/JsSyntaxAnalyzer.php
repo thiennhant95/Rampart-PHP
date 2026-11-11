@@ -51,7 +51,7 @@ final class JsSyntaxAnalyzer implements ScanContextAware
     {
         $lower = strtolower(str_replace('\\', '/', $path));
         // Ignore minified and vendored assets — they are compiled, not authored
-        if (str_contains($lower, '.min.') || str_contains($lower, '/vendor/') || str_contains($lower, '/node_modules/')) {
+        if (strpos($lower, '.min.') !== false || strpos($lower, '/vendor/') !== false || strpos($lower, '/node_modules/') !== false) {
             return false;
         }
         $ext = strtolower((string) pathinfo($path, PATHINFO_EXTENSION));
@@ -77,7 +77,7 @@ final class JsSyntaxAnalyzer implements ScanContextAware
         }
 
         // For .vue, only check <script> blocks
-        if (str_ends_with(strtolower($file), '.vue')) {
+        if (substr_compare(strtolower($file), '.vue', -strlen('.vue')) === 0) {
             $code = $this->extractVueScript($code);
             if ($code === '') {
                 return [];
@@ -95,10 +95,10 @@ final class JsSyntaxAnalyzer implements ScanContextAware
                 $result,
                 $file,
                 1,
-                Severity::Warning,
+                Severity::$Warning,
                 'custom',
                 ['kind' => 'js_unbalanced'],
-                Confidence::Medium
+                Confidence::$Medium
             ),
         ];
     }

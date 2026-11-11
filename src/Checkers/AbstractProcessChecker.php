@@ -63,14 +63,8 @@ abstract class AbstractProcessChecker implements CheckerInterface
         ];
     }
 
-    protected function result(
-        string $name,
-        float $start,
-        string $status,
-        array $issues,
-        ?string $rawOutput,
-        ?string $summary,
-    ): CheckResult {
+    protected function result(string $name, float $start, string $status, array $issues, ?string $rawOutput, ?string $summary): CheckResult
+    {
         return new CheckResult($name, $status, microtime(true) - $start, $issues, $rawOutput, $summary);
     }
 }

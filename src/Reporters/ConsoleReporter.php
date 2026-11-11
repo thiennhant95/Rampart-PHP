@@ -55,10 +55,10 @@ final class ConsoleReporter implements ReporterInterface
             $table->addRow([
                 $result->name,
                 $this->statusTag($result->status),
-                (string) $this->countBySeverity($result, Severity::Critical),
-                (string) $this->countBySeverity($result, Severity::Error),
-                (string) $this->countBySeverity($result, Severity::Warning),
-                (string) $this->countBySeverity($result, Severity::Info),
+                (string) $this->countBySeverity($result, Severity::$Critical),
+                (string) $this->countBySeverity($result, Severity::$Error),
+                (string) $this->countBySeverity($result, Severity::$Warning),
+                (string) $this->countBySeverity($result, Severity::$Info),
                 sprintf('%.2fs', $result->duration),
                 $result->summary ?? '',
             ]);
@@ -271,7 +271,7 @@ final class ConsoleReporter implements ReporterInterface
                 continue;
             }
             foreach ($result->issues as $issue) {
-                if ($issue instanceof Issue && str_starts_with($issue->rule, 'OWASP_')) {
+                if ($issue instanceof Issue && strncmp($issue->rule, 'OWASP_', strlen('OWASP_')) === 0) {
                     $counts[$issue->rule] = ($counts[$issue->rule] ?? 0) + 1;
                 }
             }
@@ -297,23 +297,35 @@ final class ConsoleReporter implements ReporterInterface
 
     private function statusTag(string $status): string
     {
-        return match ($status) {
-            'passed' => '<fg=green>' . $status . '</>',
-            'failed', 'error' => '<fg=red>' . $status . '</>',
-            'warning' => '<fg=yellow>' . $status . '</>',
-            'skipped' => '<fg=gray>' . $status . '</>',
-            default => $status,
-        };
+        switch ($status) {
+            case 'passed':
+                return '<fg=green>' . $status . '</>';
+            case 'failed':
+            case 'error':
+                return '<fg=red>' . $status . '</>';
+            case 'warning':
+                return '<fg=yellow>' . $status . '</>';
+            case 'skipped':
+                return '<fg=gray>' . $status . '</>';
+            default:
+                return $status;
+        }
     }
 
     private function severityTag(Severity $severity): string
     {
-        return match ($severity) {
-            Severity::Critical => '<fg=red;options=bold>critical</>',
-            Severity::Error => '<fg=red>error</>',
-            Severity::Warning => '<fg=yellow>warning</>',
-            Severity::Info => '<fg=cyan>info</>',
-        };
+        switch ($severity) {
+            case Severity::$Critical:
+                return '<fg=red;options=bold>critical</>';
+            case Severity::$Error:
+                return '<fg=red>error</>';
+            case Severity::$Warning:
+                return '<fg=yellow>warning</>';
+            case Severity::$Info:
+                return '<fg=cyan>info</>';
+            default:
+                return '<fg=cyan>' . $severity->value . '</>';
+        }
     }
 
     private function countBySeverity(CheckResult $result, Severity $severity): int
@@ -364,11 +376,11 @@ final class ConsoleReporter implements ReporterInterface
                 if (!$issue instanceof Issue) {
                     continue;
                 }
-                if ($issue->severity === Severity::Critical) {
+                if ($issue->severity === Severity::$Critical) {
                     ++$summary['critical'];
-                } elseif ($issue->severity === Severity::Error) {
+                } elseif ($issue->severity === Severity::$Error) {
                     ++$summary['error'];
-                } elseif ($issue->severity === Severity::Warning) {
+                } elseif ($issue->severity === Severity::$Warning) {
                     ++$summary['warning'];
                 } else {
                     ++$summary['info'];

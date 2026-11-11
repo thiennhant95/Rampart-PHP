@@ -92,7 +92,7 @@ final class PhpunitChecker extends AbstractProcessChecker
                     sprintf('Line coverage is %.1f%%, below the %d%% threshold.', $coverage, $coverageThreshold),
                     null,
                     null,
-                    Severity::Error,
+                    Severity::$Error,
                     'phpunit',
                     ['coverage' => $coverage, 'threshold' => $coverageThreshold]
                 );
@@ -166,8 +166,8 @@ final class PhpunitChecker extends AbstractProcessChecker
  */
     private function foundNothingToRun(string $output): bool
     {
-        return str_contains($output, 'Usage:')
-            || str_contains($output, 'No tests executed');
+        return strpos($output, 'Usage:') !== false
+            || strpos($output, 'No tests executed') !== false;
     }
 
     private function parseJunit(string $file): array
@@ -202,7 +202,7 @@ final class PhpunitChecker extends AbstractProcessChecker
                     sprintf('[%s::%s] %s', $class ?? 'test', $name, $message),
                     $file,
                     $line > 0 ? $line : null,
-                    Severity::Error,
+                    Severity::$Error,
                     'phpunit',
                     ['class' => $class, 'method' => $name, 'kind' => $tag]
                 );

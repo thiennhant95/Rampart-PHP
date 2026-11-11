@@ -74,10 +74,10 @@ final class TestWithoutAssertAnalyzer implements ScanContextAware
                 sprintf('Test method %s() contains no assertion statements.', $methodName),
                 $file,
                 $method->getStartLine(),
-                Severity::Warning,
+                Severity::$Warning,
                 'custom',
                 ['method' => $methodName],
-                Confidence::Low
+                Confidence::$Low
             );
         }
 
@@ -92,7 +92,7 @@ final class TestWithoutAssertAnalyzer implements ScanContextAware
 
         $name = $method->name instanceof Node\Identifier ? $method->name->toString() : '';
 
-        if (str_starts_with($name, 'test')) {
+        if (strncmp($name, 'test', strlen('test')) === 0) {
             return true;
         }
 
@@ -117,9 +117,9 @@ final class TestWithoutAssertAnalyzer implements ScanContextAware
             if ($call->name instanceof Node\Identifier) {
                 $name = $call->name->toString();
                 if (
-                    str_starts_with($name, 'assert')
-                    || str_starts_with($name, 'expect')
-                    || str_starts_with($name, 'expectException')
+                    strncmp($name, 'assert', strlen('assert')) === 0
+                    || strncmp($name, 'expect', strlen('expect')) === 0
+                    || strncmp($name, 'expectException', strlen('expectException')) === 0
                 ) {
                     return true;
                 }
@@ -130,7 +130,7 @@ final class TestWithoutAssertAnalyzer implements ScanContextAware
         foreach ($funcCalls as $call) {
             if ($call->name instanceof Node\Name) {
                 $name = $call->name->toString();
-                if (str_starts_with($name, 'assert') || str_starts_with($name, 'expect')) {
+                if (strncmp($name, 'assert', strlen('assert')) === 0 || strncmp($name, 'expect', strlen('expect')) === 0) {
                     return true;
                 }
             }
@@ -143,6 +143,6 @@ final class TestWithoutAssertAnalyzer implements ScanContextAware
     {
         $normalized = str_replace('\\', '/', $file);
 
-        return str_contains($normalized, '/tests/') || str_starts_with($normalized, 'tests/');
+        return strpos($normalized, '/tests/') !== false || strncmp($normalized, 'tests/', strlen('tests/')) === 0;
     }
 }

@@ -19,7 +19,7 @@ missing tests and conventions.
 
 | Requirement | Version |
 |---|---|
-| PHP (of the tool) | `^8.1` |
+| PHP (of the tool) | `>=7.4` (tested on 7.4 and 8.2) |
 | PHP (of the target) | any; parsed, not executed |
 | Composer | `2.4+` for `composer audit` |
 
@@ -61,7 +61,7 @@ Outputs: `rampart-report.html`, `rampart-report.json`, `rampart-report.md`,
 | `slimphp/Slim-Skeleton` | **0 findings** |
 | `codeigniter4/appstarter` | **0 findings** |
 | `thiennhant95/Rampart` (Laravel-flavoured library) | **1 finding** (PHP 8.1 EOL only) |
-| Test suite | `1419 tests, 3426 assertions`, PHPStan `[OK]`, PHPCS clean |
+| Test suite | `1424 tests, 3432 assertions` on PHP 7.4 **and** 8.2, PHPStan `[OK]`, PHPCS clean |
 
 This is a snapshot, not a live benchmark. Use
 [tools/benchmark-projects.php](tools/benchmark-projects.php) on your own
@@ -79,6 +79,7 @@ it with `--framework=` when detection is ambiguous.
 | CodeIgniter 4 | `spark` + `app/Config` | `app/Config/Routes.php`, `filter` auth |
 | FuelPHP | `fuel/app` | `fuel/app/config/routes.php` + controller `before()` auth |
 | Symfony | `config/bundles.php` or `src/Kernel.php` | `#[Route]` attributes and `config/routes*.yaml`; `security.yaml access_control` |
+| Phalcon | `phalcon/cphalcon` or `app/controllers` + `public/index.php` | `app/config/routes.php`; `beforeExecuteRoute`/`beforeDispatch` ACL |
 | Laravel | `laravel/framework` | full semantic index (routes, middleware, policies) |
 
 ## Options
@@ -201,7 +202,7 @@ Categories follow OWASP Top 10 **2021**.
 
 | Rule ID | Severity | Confidence | What it detects |
 |---|---|---|---|
-| `ROUTE_MISSING_AUTH` | Warning | low | Slim/CI4/FuelPHP/Symfony mutating route without a visible auth middleware/filter/attribute/`before()`. |
+| `ROUTE_MISSING_AUTH` | Warning | low | Slim/CI4/FuelPHP/Symfony/Phalcon mutating route without a visible auth middleware/filter/attribute/`before()`/ACL check. |
 
 ### Test coverage (`analyzers/test_coverage`)
 

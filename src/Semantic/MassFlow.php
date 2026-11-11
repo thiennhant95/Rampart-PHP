@@ -21,21 +21,51 @@ final class MassFlow
     public const INTERNAL = 'internal';
 
     public const UNKNOWN = 'unknown';
-
+    /**
+     * @readonly
+     */
+    public string $status;
+    /**
+     * @var list<string>|null
+     * @readonly
+     */
+    public ?array $fields;
+    /**
+     * @var list<string>|null
+     * @readonly
+     */
+    public ?array $excluded;
+    /**
+     * @readonly
+     */
+    public bool $forceBypass;
+    /**
+     * @readonly
+     */
+    public string $source;
+    /**
+     * @readonly
+     */
+    public string $sink;
+    /**
+     * @var list<array{kind: string, detail: string, line: (int | null)}>
+     * @readonly
+     */
+    public array $trace;
     /**
      * @param list<string>|null $fields bounded/known fields (only())
      * @param list<string>|null $excluded removed fields (except())
      * @param list<array{kind: string, detail: string, line: int|null}> $trace
      */
-    public function __construct(
-        public readonly string $status,
-        public readonly ?array $fields,
-        public readonly ?array $excluded,
-        public readonly bool $forceBypass,
-        public readonly string $source,
-        public readonly string $sink,
-        public readonly array $trace,
-    ) {
+    public function __construct(string $status, ?array $fields, ?array $excluded, bool $forceBypass, string $source, string $sink, array $trace)
+    {
+        $this->status = $status;
+        $this->fields = $fields;
+        $this->excluded = $excluded;
+        $this->forceBypass = $forceBypass;
+        $this->source = $source;
+        $this->sink = $sink;
+        $this->trace = $trace;
     }
 
     /**

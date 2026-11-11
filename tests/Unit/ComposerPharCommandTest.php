@@ -44,12 +44,7 @@ final class ComposerPharCommandTest extends TestCase
      */
     private function context(array $config = []): CheckContext
     {
-        return new CheckContext(
-            $this->projectDir,
-            ['app'],
-            $config,
-            $this->projectDir . DIRECTORY_SEPARATOR . 'reports',
-        );
+        return new CheckContext($this->projectDir, ['app'], $config, $this->projectDir . DIRECTORY_SEPARATOR . 'reports');
     }
 
     /**

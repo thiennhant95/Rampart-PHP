@@ -114,7 +114,7 @@ final class OwaspPathTraversalAnalyzer extends AbstractAnalyzer
                     sprintf('Potential path traversal: user input flows into %s.', $sink),
                     $file,
                     $node->getStartLine(),
-                    Severity::Error,
+                    Severity::$Error,
                     ['sink' => $sink]
                 );
                 continue;
@@ -141,7 +141,7 @@ final class OwaspPathTraversalAnalyzer extends AbstractAnalyzer
                     sprintf('Potential path traversal: user input flows into %s.', $sink),
                     $file,
                     $node->getStartLine(),
-                    Severity::Error,
+                    Severity::$Error,
                     ['sink' => $sink]
                 );
                 continue;
@@ -179,7 +179,7 @@ final class OwaspPathTraversalAnalyzer extends AbstractAnalyzer
                     sprintf('Potential path traversal: user input flows into %s.', $label),
                     $file,
                     $node->getStartLine(),
-                    Severity::Error,
+                    Severity::$Error,
                     ['sink' => $label]
                 );
                 continue;
@@ -209,7 +209,7 @@ final class OwaspPathTraversalAnalyzer extends AbstractAnalyzer
                     sprintf('Potential path traversal: user input flows into %s.', $sink),
                     $file,
                     $node->getStartLine(),
-                    Severity::Error,
+                    Severity::$Error,
                     ['sink' => $sink]
                 );
             }
@@ -220,20 +220,25 @@ final class OwaspPathTraversalAnalyzer extends AbstractAnalyzer
 
     private function includeSinkLabel(Node\Expr\Include_ $node): ?string
     {
-        return match ($node->type) {
-            Node\Expr\Include_::TYPE_INCLUDE => 'include',
-            Node\Expr\Include_::TYPE_INCLUDE_ONCE => 'include_once',
-            Node\Expr\Include_::TYPE_REQUIRE => 'require',
-            Node\Expr\Include_::TYPE_REQUIRE_ONCE => 'require_once',
-            default => null,
-        };
+        switch ($node->type) {
+            case Node\Expr\Include_::TYPE_INCLUDE:
+                return 'include';
+            case Node\Expr\Include_::TYPE_INCLUDE_ONCE:
+                return 'include_once';
+            case Node\Expr\Include_::TYPE_REQUIRE:
+                return 'require';
+            case Node\Expr\Include_::TYPE_REQUIRE_ONCE:
+                return 'require_once';
+            default:
+                return null;
+        }
     }
 
     private function isStorageClass(string $class): bool
     {
         $normalized = strtolower(ltrim($class, '\\'));
 
-        return $normalized === 'storage' || str_ends_with($normalized, '\\storage');
+        return $normalized === 'storage' || substr_compare($normalized, '\\storage', -strlen('\\storage')) === 0;
     }
 
     private function isFileClass(string $class): bool
@@ -242,8 +247,8 @@ final class OwaspPathTraversalAnalyzer extends AbstractAnalyzer
 
         return $normalized === 'file'
             || $normalized === 'filesystem'
-            || str_ends_with($normalized, '\\file')
-            || str_ends_with($normalized, '\\filesystem');
+            || substr_compare($normalized, '\\file', -strlen('\\file')) === 0
+            || substr_compare($normalized, '\\filesystem', -strlen('\\filesystem')) === 0;
     }
 
     private function isResponseReceiver(Node\Expr $expr): bool
@@ -314,7 +319,7 @@ final class OwaspPathTraversalAnalyzer extends AbstractAnalyzer
             && $expr->class instanceof Node\Name
         ) {
             $class = strtolower(ltrim($expr->class->toString(), '\\'));
-            if ($class === 'request' || str_ends_with($class, '\\request')) {
+            if ($class === 'request' || substr_compare($class, '\\request', -strlen('\\request')) === 0) {
                 return true;
             }
             if ($allowNameHeuristic && $this->isLocalPathName($expr->name->toString())) {

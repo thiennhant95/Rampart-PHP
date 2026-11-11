@@ -14,12 +14,17 @@ final class MissingTestAnalyzer extends AbstractAnalyzer
 {
     private const RULE_MODEL = RuleIds::MISSING_MODEL_TEST;
     private const RULE_SERVICE = RuleIds::MISSING_SERVICE_TEST;
+    /**
+     * @var list<string>
+     */
+    private array $scopes = ['services', 'models'];
 
     /**
      * @param list<string> $scopes e.g. ['services', 'repositories'] or ['models']
      */
-    public function __construct(private array $scopes = ['services', 'models'])
+    public function __construct(array $scopes = ['services', 'models'])
     {
+        $this->scopes = $scopes;
     }
 
     public function analyze(array $files): array
@@ -63,9 +68,9 @@ final class MissingTestAnalyzer extends AbstractAnalyzer
                 ),
                 $file,
                 1,
-                Severity::Info,
+                Severity::$Info,
                 ['class' => $classBase, 'scope' => $scope, 'expected_test' => $testClassBase],
-                Confidence::Low
+                Confidence::$Low
             );
         }
 
@@ -78,7 +83,7 @@ final class MissingTestAnalyzer extends AbstractAnalyzer
 
         foreach ($this->scopes as $scope) {
             $needle = '/app/' . ucfirst($scope) . '/';
-            if (str_contains($normalized, $needle)) {
+            if (strpos($normalized, $needle) !== false) {
                 return strtolower($scope);
             }
         }
@@ -88,11 +93,14 @@ final class MissingTestAnalyzer extends AbstractAnalyzer
 
     private function ruleFor(string $scope): string
     {
-        return match ($scope) {
-            'models' => self::RULE_MODEL,
-            'repositories' => self::RULE_SERVICE,
-            default => self::RULE_SERVICE,
-        };
+        switch ($scope) {
+            case 'models':
+                return self::RULE_MODEL;
+            case 'repositories':
+                return self::RULE_SERVICE;
+            default:
+                return self::RULE_SERVICE;
+        }
     }
 
     private function classBaseName(string $file): ?string
@@ -133,7 +141,7 @@ final class MissingTestAnalyzer extends AbstractAnalyzer
                 continue;
             }
             $normalized = str_replace('\\', '/', $file);
-            if (!str_contains($normalized, '/tests/') && !str_starts_with($normalized, 'tests/')) {
+            if (strpos($normalized, '/tests/') === false && strncmp($normalized, 'tests/', strlen('tests/')) !== 0) {
                 continue;
             }
 

@@ -186,12 +186,16 @@ final class TrivyChecker implements CheckerInterface
     {
         $upper = strtoupper($severity);
 
-        return match ($upper) {
-            'CRITICAL' => Severity::Critical,
-            'HIGH' => Severity::Error,
-            'MEDIUM' => Severity::Warning,
-            default => Severity::Info,
-        };
+        switch ($upper) {
+            case 'CRITICAL':
+                return Severity::$Critical;
+            case 'HIGH':
+                return Severity::$Error;
+            case 'MEDIUM':
+                return Severity::$Warning;
+            default:
+                return Severity::$Info;
+        }
     }
 
     protected function binaryExists(string $binary): bool

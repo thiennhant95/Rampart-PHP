@@ -17,18 +17,39 @@ use Rampart\Php\Analysis\CountingNodeFinder;
 final class ConstantScope
 {
     /**
+     * @var list<Node>
+     * @readonly
+     */
+    public array $nodes;
+    /**
+     * @readonly
+     */
+    public int $funcId;
+    /**
+     * @readonly
+     */
+    public string $file;
+    /**
+     * @var array<string, string>
+     * @readonly
+     */
+    public array $uses;
+    /**
+     * @readonly
+     */
+    public ?string $namespace;
+    /**
      * @param list<Node> $nodes file AST statements
      * @param array<string, string> $uses lowercase alias => FQCN
      */
-    public function __construct(
-        public readonly array $nodes,
-        public readonly int $funcId,
-        public readonly string $file,
-        public readonly array $uses,
-        public readonly ?string $namespace,
-    ) {
+    public function __construct(array $nodes, int $funcId, string $file, array $uses, ?string $namespace)
+    {
+        $this->nodes = $nodes;
+        $this->funcId = $funcId;
+        $this->file = $file;
+        $this->uses = $uses;
+        $this->namespace = $namespace;
     }
-
     /**
      * @param list<Node> $nodes
      */

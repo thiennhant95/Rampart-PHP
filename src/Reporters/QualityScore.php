@@ -232,7 +232,7 @@ final class QualityScore
         $upper = strtoupper($rule);
         foreach (self::DIMENSIONS as $dimension => $needles) {
             foreach ($needles as $needle) {
-                if (str_contains($upper, $needle)) {
+                if (strpos($upper, $needle) !== false) {
                     return $dimension;
                 }
             }
@@ -246,13 +246,13 @@ final class QualityScore
      */
     private static function bucketFor(Issue $issue, string $dimension): string
     {
-        if ($issue->severity === Severity::Critical) {
+        if ($issue->severity === Severity::$Critical) {
             return 'must_fix';
         }
         if (
             $dimension === 'Security'
-            && $issue->severity === Severity::Error
-            && $issue->confidence === Confidence::High
+            && $issue->severity === Severity::$Error
+            && $issue->confidence === Confidence::$High
         ) {
             return 'must_fix';
         }

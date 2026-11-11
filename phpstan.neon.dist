@@ -14,6 +14,6 @@ parameters:
         - tests/*/fixtures/*
         - tests/**/fixtures/*
     tmpDir: build/phpstan
-    phpVersion: 80200
+    phpVersion: 70400
     parallel:
         maximumNumberOfProcesses: 1

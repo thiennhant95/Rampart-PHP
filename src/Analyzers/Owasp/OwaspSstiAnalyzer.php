@@ -123,7 +123,7 @@ final class OwaspSstiAnalyzer extends AbstractAnalyzer
                 sprintf('Potential SSTI: dynamic template argument flows into %s.', $sink),
                 $file,
                 $call->getStartLine(),
-                Severity::Error,
+                Severity::$Error,
                 ['sink' => $sink]
             );
         }
@@ -141,12 +141,12 @@ final class OwaspSstiAnalyzer extends AbstractAnalyzer
             $class = $node->class->toString();
             $method = $node->name->toString();
 
-            $isBlade = $class === 'Blade' || $class === 'Illuminate\\Support\\Facades\\Blade' || str_ends_with($class, '\\Blade');
+            $isBlade = $class === 'Blade' || $class === 'Illuminate\\Support\\Facades\\Blade' || substr_compare($class, '\\Blade', -strlen('\\Blade')) === 0;
             if ($isBlade && ($method === 'render' || $method === self::STATIC_COMPILE)) {
                 return $class . '::' . $method;
             }
 
-            $isView = $class === 'View' || $class === 'Illuminate\\Support\\Facades\\View' || str_ends_with($class, '\\View');
+            $isView = $class === 'View' || $class === 'Illuminate\\Support\\Facades\\View' || substr_compare($class, '\\View', -strlen('\\View')) === 0;
             if ($isView && in_array($method, ['make', 'composer', 'creator'], true)) {
                 return $class . '::' . $method;
             }
@@ -367,9 +367,9 @@ final class OwaspSstiAnalyzer extends AbstractAnalyzer
      * An inline array of literal strings/numbers, or a variable assigned
      * only such arrays in the same scope.
      *
-     * @param Node|list<Node> $scope
+     * @param \PhpParser\Node|mixed[] $scope
      */
-    private function isLiteralStringList(Node\Expr $expr, Node|array $scope): bool
+    private function isLiteralStringList(Node\Expr $expr, $scope): bool
     {
         if ($expr instanceof Node\Expr\Array_) {
             foreach ($expr->items as $item) {
@@ -661,8 +661,9 @@ final class OwaspSstiAnalyzer extends AbstractAnalyzer
 
     /**
      * @param list<Node> $nodes
+     * @return \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_|null
      */
-    private function enclosingFunction(Node $call, array $nodes): Node\Stmt\ClassMethod|Node\Stmt\Function_|null
+    private function enclosingFunction(Node $call, array $nodes)
     {
         $target = spl_object_id($call);
         $funcs = $this->finder()->find($nodes, static function (Node $node): bool {
@@ -686,9 +687,10 @@ final class OwaspSstiAnalyzer extends AbstractAnalyzer
 
     /**
      * @param list<array{func: int|null, vars: array<string, true>, calls: array<int, true>}> $scopes
+     * @param \PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Expr\StaticCall $site
      */
     private function callSiteArgIsLiteral(
-        Node\Expr\MethodCall|Node\Expr\StaticCall $site,
+        $site,
         int $index,
         string $paramName,
         array $scopes
@@ -717,10 +719,10 @@ final class OwaspSstiAnalyzer extends AbstractAnalyzer
      * composed solely of literals and previously-known variables, processed
      * in source order (e.g. `$industry = 2; $view = 'pos_' . $industry`).
      *
-     * @param Node|list<Node> $scope
+     * @param \PhpParser\Node|mixed[] $scope
      * @return array<string, true>
      */
-    private function literalAssignedVars(Node|array $scope): array
+    private function literalAssignedVars($scope): array
     {
         $vars = [];
         $assigns = $this->finder()->find($scope, static function (Node $node): bool {

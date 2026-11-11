@@ -91,9 +91,9 @@ final class XssEchoAnalyzer extends AbstractAnalyzer
             'Request-derived value is echoed without escaping (XSS). Use htmlspecialchars($value, ENT_QUOTES, \'UTF-8\') or an escaping template engine.',
             $file,
             $line,
-            Severity::Error,
+            Severity::$Error,
             ['sink' => $direct ? 'request' : 'variable'],
-            $direct ? Confidence::High : Confidence::Medium
+            $direct ? Confidence::$High : Confidence::$Medium
         );
     }
 

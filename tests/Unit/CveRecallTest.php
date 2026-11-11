@@ -215,7 +215,7 @@ final class CveRecallTest extends TestCase
     /**
      * @param array<string, string> $files
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('injections')]
+    /** @dataProvider injections */
     public function testInjectionIsFlagged(Closure $factory, array $files, string $expectedRule): void
     {
         $paths = $this->materialize($files);

@@ -80,30 +80,30 @@ final class HtmlReporterTest extends TestCase
                     'Tainted input flows into select().',
                     'app/Http/Controllers/UserController.php',
                     7,
-                    Severity::Critical,
+                    Severity::$Critical,
                     'custom',
                     [],
-                    Confidence::High
+                    Confidence::$High
                 ),
                 new Issue(
                     'TODO_FIXME',
                     'Leftover TODO marker.',
                     'app/Services/OrderService.php',
                     3,
-                    Severity::Info,
+                    Severity::$Info,
                     'custom',
                     [],
-                    Confidence::Low
+                    Confidence::$Low
                 ),
                 new Issue(
                     'OWASP_SSRF',
                     'URL from user input into file_get_contents.',
                     'app/Http/Controllers/UserController.php',
                     7,
-                    Severity::Error,
+                    Severity::$Error,
                     'custom',
                     [],
-                    Confidence::High
+                    Confidence::$High
                 ),
             ], null, '3 issues'),
             new CheckResult('phpcs', 'passed', 1.2, [], null, null),
@@ -119,7 +119,10 @@ final class HtmlReporterTest extends TestCase
             ['app'],
             $config,
             $this->tempDir,
-            packageVersion: '1.0.0'
+            false,
+            false,
+            false,
+            '1.0.0'
         );
 
         $ctx->metadata = $metadata;
@@ -430,7 +433,10 @@ final class HtmlReporterTest extends TestCase
             ['app'],
             [],
             $this->tempDir,
-            packageVersion: '1.0.0'
+            false,
+            false,
+            false,
+            '1.0.0'
         );
         $ctx->metadata['delta'] = [
             'new' => 2,

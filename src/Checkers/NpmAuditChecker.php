@@ -54,7 +54,7 @@ final class NpmAuditChecker extends AbstractProcessChecker
         $issues = $this->parseOutput($stdout);
         $rawOutput = trim($stdout . "\n" . $stderr);
 
-        if ($exitCode !== 0 && count($issues) === 0 && str_contains($rawOutput, 'ENOTFOUND')) {
+        if ($exitCode !== 0 && count($issues) === 0 && strpos($rawOutput, 'ENOTFOUND') !== false) {
             return $this->result($this->name(), $start, 'error', [], $rawOutput, 'npm audit failed (offline or registry unreachable).');
         }
 
@@ -117,11 +117,16 @@ final class NpmAuditChecker extends AbstractProcessChecker
 
     private function mapSeverity(string $severity): Severity
     {
-        return match (strtolower($severity)) {
-            'critical' => Severity::Critical,
-            'high' => Severity::Error,
-            'moderate', 'medium' => Severity::Warning,
-            default => Severity::Info,
-        };
+        switch (strtolower($severity)) {
+            case 'critical':
+                return Severity::$Critical;
+            case 'high':
+                return Severity::$Error;
+            case 'moderate':
+            case 'medium':
+                return Severity::$Warning;
+            default:
+                return Severity::$Info;
+        }
     }
 }

@@ -49,10 +49,10 @@ final class RemediationTest extends TestCase
                     'Potential SSRF: URL derived from user input flows into file_get_contents().',
                     'app/Services/ExternalService.php',
                     12,
-                    Severity::Error,
+                    Severity::$Error,
                     'custom',
                     [],
-                    Confidence::High
+                    Confidence::$High
                 ),
             ], null, '1 issue'),
         ];
@@ -68,7 +68,10 @@ final class RemediationTest extends TestCase
             ['app'],
             [],
             $this->tempDir,
-            packageVersion: '1.0.0'
+            false,
+            false,
+            false,
+            '1.0.0'
         );
     }
 

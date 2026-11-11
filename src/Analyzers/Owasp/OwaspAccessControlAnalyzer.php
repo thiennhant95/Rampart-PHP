@@ -57,14 +57,20 @@ final class OwaspAccessControlAnalyzer extends AbstractAnalyzer
 
     private const MUTATING_CALLS = ['save', 'delete', 'update', 'create', 'insert', 'upsert', 'destroy'];
 
-    /** @var list<string> */
-    private readonly array $extraMiddleware;
+    /** @var list<string>
+     * @readonly */
+    private array $extraMiddleware;
+    /**
+     * @readonly
+     */
+    private bool $routeMiddleware = true;
 
     /**
      * @param array{extra_middleware?: string|list<string>} $options
      */
-    public function __construct(private readonly bool $routeMiddleware = true, array $options = [])
+    public function __construct(bool $routeMiddleware = true, array $options = [])
     {
+        $this->routeMiddleware = $routeMiddleware;
         $raw = $options['extra_middleware'] ?? [];
         if (is_string($raw)) {
             $raw = [$raw];
@@ -150,10 +156,10 @@ final class OwaspAccessControlAnalyzer extends AbstractAnalyzer
      */
     private function resolveParam(string $type, array $uses, ?string $namespace): string
     {
-        if (str_starts_with($type, '\\')) {
+        if (strncmp($type, '\\', strlen('\\')) === 0) {
             return ltrim($type, '\\');
         }
-        if (!str_contains($type, '\\') && isset($uses[strtolower($type)])) {
+        if (strpos($type, '\\') === false && isset($uses[strtolower($type)])) {
             return $uses[strtolower($type)];
         }
         $pos = strpos($type, '\\');
@@ -206,7 +212,7 @@ final class OwaspAccessControlAnalyzer extends AbstractAnalyzer
             return false;
         }
 
-        return str_ends_with($class->name->toString(), 'Controller');
+        return substr_compare($class->name->toString(), 'Controller', -strlen('Controller')) === 0;
     }
 
     /**
@@ -382,7 +388,7 @@ final class OwaspAccessControlAnalyzer extends AbstractAnalyzer
         MiddlewareInspector $inspector,
         array &$inspected
     ): array {
-        $registration = $registry?->resolve($alias);
+        $registration = ($registry2 = $registry) ? $registry2->resolve($alias) : null;
         if ($registration === null || $registry === null) {
             return [
                 'evidence' => null,
@@ -443,9 +449,9 @@ final class OwaspAccessControlAnalyzer extends AbstractAnalyzer
                 ),
                 $file,
                 $line,
-                Severity::Error,
+                Severity::$Error,
                 array_merge($metadata, ['method' => $method]),
-                Confidence::Medium
+                Confidence::$Medium
             );
         }
 
@@ -454,7 +460,7 @@ final class OwaspAccessControlAnalyzer extends AbstractAnalyzer
             sprintf('Mutating method %s() has no visible authorization check.', $method),
             $file,
             $line,
-            Severity::Error,
+            Severity::$Error,
             array_merge($metadata, ['method' => $method])
         );
     }
@@ -543,7 +549,7 @@ final class OwaspAccessControlAnalyzer extends AbstractAnalyzer
                     && $node->name instanceof Node\Identifier
                     && in_array($node->name->toString(), ['allow', 'deny', 'authorize', 'abort', 'abortIf', 'abortUnless'], true)
                     && $node->class instanceof Node\Name
-                    && ($node->class->toString() === 'Gate' || str_ends_with($node->class->toString(), '\\Gate'))
+                    && ($node->class->toString() === 'Gate' || substr_compare($node->class->toString(), '\\Gate', -strlen('\\Gate')) === 0)
                 ) {
                     return true;
                 }

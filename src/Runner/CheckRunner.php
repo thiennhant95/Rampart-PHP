@@ -129,8 +129,8 @@ final class CheckRunner
     private function withoutLowSeverity(array $results): array
     {
         $raw = $this->ctx->minSeverity !== '' ? $this->ctx->minSeverity : (string) ($this->ctx->config['min_severity'] ?? 'info');
-        $floor = Severity::tryFrom(strtolower($raw))?->intValue() ?? Severity::Info->intValue();
-        if ($floor <= Severity::Info->intValue()) {
+        $floor = (($tryFrom = Severity::tryFrom(strtolower($raw))) ? $tryFrom->intValue() : null) ?? Severity::$Info->intValue();
+        if ($floor <= Severity::$Info->intValue()) {
             return $results;
         }
 
@@ -260,7 +260,7 @@ final class CheckRunner
                 if (
                     $this->ctx->tier === 'security'
                     && $issue->source !== 'composer_audit'
-                    && $issue->confidence->intValue() < Confidence::High->intValue()
+                    && $issue->confidence->intValue() < Confidence::$High->intValue()
                 ) {
                     continue;
                 }

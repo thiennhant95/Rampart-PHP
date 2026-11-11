@@ -5,21 +5,70 @@ declare(strict_types=1);
 namespace Rampart\Php\Framework;
 
 /**
- * Frameworks the standalone scanner knows how to lay out. Detection never
- * boots the framework: it reads composer.json and a handful of marker files.
- * `PLAIN` is the fallback and is a first-class target, not an error state.
+ * Framework value object (PHP 7.4 compatible replacement for the enum).
+ *
+ * Detection never boots the framework: it reads composer.json and a handful of
+ * marker files. `PLAIN` is the fallback and is a first-class target.
  */
-enum Framework: string
+final class Framework
 {
-    case PLAIN = 'plain';
-    case SLIM = 'slim';
-    case CODEIGNITER4 = 'codeigniter4';
-    case FUELPHP = 'fuelphp';
-    case SYMFONY = 'symfony';
-    case LARAVEL = 'laravel';
+    public static Framework $PLAIN;
+
+    public static Framework $SLIM;
+
+    public static Framework $CODEIGNITER4;
+
+    public static Framework $FUELPHP;
+
+    public static Framework $SYMFONY;
+
+    public static Framework $LARAVEL;
+
+    public static Framework $PHALCON;
+
+    /** @var string */
+    public string $value;
+
+    private function __construct(string $value)
+    {
+        $this->value = $value;
+    }
+
+    public static function init(): void
+    {
+        self::$PLAIN = new self('plain');
+        self::$SLIM = new self('slim');
+        self::$CODEIGNITER4 = new self('codeigniter4');
+        self::$FUELPHP = new self('fuelphp');
+        self::$SYMFONY = new self('symfony');
+        self::$LARAVEL = new self('laravel');
+        self::$PHALCON = new self('phalcon');
+    }
+
+    public static function tryFrom(string $value): ?self
+    {
+        switch (strtolower(trim($value))) {
+            case 'plain':
+                return self::$PLAIN;
+            case 'slim':
+                return self::$SLIM;
+            case 'codeigniter4':
+                return self::$CODEIGNITER4;
+            case 'fuelphp':
+                return self::$FUELPHP;
+            case 'symfony':
+                return self::$SYMFONY;
+            case 'laravel':
+                return self::$LARAVEL;
+            case 'phalcon':
+                return self::$PHALCON;
+        }
+
+        return null;
+    }
 
     public static function tryFromName(string $name): ?self
     {
-        return self::tryFrom(strtolower(trim($name)));
+        return self::tryFrom($name);
     }
 }

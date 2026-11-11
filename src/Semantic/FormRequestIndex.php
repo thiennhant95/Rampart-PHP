@@ -48,7 +48,7 @@ final class FormRequestIndex implements ScanContextAware
             }
             // Bound the parse surface: request classes live in
             // *Request.php files by convention.
-            if (!str_ends_with(strtolower((string) pathinfo($file, PATHINFO_BASENAME)), 'request.php')) {
+            if (substr_compare(strtolower((string) pathinfo($file, PATHINFO_BASENAME)), 'request.php', -strlen('request.php')) !== 0) {
                 continue;
             }
             $this->collectFromFile($file);
@@ -87,13 +87,19 @@ final class FormRequestIndex implements ScanContextAware
         if ($entry === null) {
             return null;
         }
-        $mechanism = match ($entry['authorize']) {
-            'strong' => $entry['ability'] === 'deny-all'
-                ? AuthorizationEvidence::MECH_DENY
-                : AuthorizationEvidence::MECH_CAN,
-            'custom' => AuthorizationEvidence::MECH_CUSTOM,
-            default => AuthorizationEvidence::MECH_NONE,
-        };
+        switch ($entry['authorize']) {
+            case 'strong':
+                $mechanism = $entry['ability'] === 'deny-all'
+                    ? AuthorizationEvidence::MECH_DENY
+                    : AuthorizationEvidence::MECH_CAN;
+                break;
+            case 'custom':
+                $mechanism = AuthorizationEvidence::MECH_CUSTOM;
+                break;
+            default:
+                $mechanism = AuthorizationEvidence::MECH_NONE;
+                break;
+        }
         if ($mechanism === AuthorizationEvidence::MECH_NONE) {
             return null;
         }
@@ -126,7 +132,7 @@ final class FormRequestIndex implements ScanContextAware
                 continue;
             }
             $short = $class->name->toString();
-            if (!str_ends_with($short, 'Request')) {
+            if (substr_compare($short, 'Request', -strlen('Request')) !== 0) {
                 continue;
             }
             $fqn = $namespace !== null ? $namespace . '\\' . $short : $short;
@@ -266,7 +272,10 @@ final class FormRequestIndex implements ScanContextAware
         return ['kind' => 'none', 'confidence' => 'high', 'ability' => null];
     }
 
-    private function firstStringArg(Node\Expr\StaticCall|Node\Expr\MethodCall $node): ?string
+    /**
+     * @param \PhpParser\Node\Expr\StaticCall|\PhpParser\Node\Expr\MethodCall $node
+     */
+    private function firstStringArg($node): ?string
     {
         $arg = $node->args[0] ?? null;
         if ($arg instanceof Node\Arg && $arg->value instanceof Node\Scalar\String_) {
@@ -321,7 +330,7 @@ final class FormRequestIndex implements ScanContextAware
         }
 
         return $lower === 'formrequest' && $namespace !== null
-            && str_ends_with($namespace, 'Http\\Requests');
+            && substr_compare($namespace, 'Http\\Requests', -strlen('Http\\Requests')) === 0;
     }
 
     /**

@@ -72,10 +72,10 @@ XML;
 
     public function testCoverageGateIsAnErrorSeverity(): void
     {
-        // Ensure the source now uses Severity::Error for low coverage
+        // Ensure the source now uses Severity::$Error for low coverage
         $code = file_get_contents(__DIR__ . '/../../src/Checkers/PhpunitChecker.php');
         self::assertStringContainsString('PHPUNIT_LOW_COVERAGE', $code);
-        self::assertStringContainsString('Severity::Error', $code);
+        self::assertStringContainsString('Severity::$Error', $code);
         // The old Warning must not remain for this rule
         $pos = strpos($code, 'PHPUNIT_LOW_COVERAGE');
         $snippet = substr($code, $pos, 300);

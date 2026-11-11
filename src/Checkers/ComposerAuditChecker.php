@@ -140,12 +140,16 @@ final class ComposerAuditChecker extends AbstractProcessChecker
 
     private function mapSeverity(string $severity): Severity
     {
-        return match (strtolower($severity)) {
-            'critical' => Severity::Critical,
-            'high' => Severity::Error,
-            'medium' => Severity::Warning,
-            default => Severity::Info,
-        };
+        switch (strtolower($severity)) {
+            case 'critical':
+                return Severity::$Critical;
+            case 'high':
+                return Severity::$Error;
+            case 'medium':
+                return Severity::$Warning;
+            default:
+                return Severity::$Info;
+        }
     }
 
     /**

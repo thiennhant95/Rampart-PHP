@@ -84,9 +84,9 @@ final class LdapInjectionAnalyzer extends AbstractAnalyzer
                     ),
                     $file,
                     $call->getStartLine(),
-                    Severity::Critical,
+                    Severity::$Critical,
                     ['function' => $name, 'part' => $kind],
-                    Confidence::High
+                    Confidence::$High
                 );
             }
         }

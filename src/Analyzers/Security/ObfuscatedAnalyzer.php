@@ -52,10 +52,10 @@ final class ObfuscatedAnalyzer implements ScanContextAware
                         sprintf('Obfuscated PHP detected: %s.', $label),
                         $file,
                         1,
-                        Severity::Critical,
+                        Severity::$Critical,
                         'custom',
                         ['pattern' => $pattern],
-                        Confidence::Medium
+                        Confidence::$Medium
                     );
                     break;
                 }
@@ -73,10 +73,10 @@ final class ObfuscatedAnalyzer implements ScanContextAware
                     'Obfuscated PHP detected: hex-encoded string.',
                     $file,
                     1,
-                    Severity::Critical,
+                    Severity::$Critical,
                     'custom',
                     ['pattern' => self::HEX_PATTERN],
-                    Confidence::Medium
+                    Confidence::$Medium
                 );
             }
         }
@@ -91,7 +91,7 @@ final class ObfuscatedAnalyzer implements ScanContextAware
      */
     private static function stripStringsAndComments(string $code): string
     {
-        if (!str_contains($code, '<?')) {
+        if (strpos($code, '<?') === false) {
             $code = '<?php ' . $code;
         }
         $out = '';

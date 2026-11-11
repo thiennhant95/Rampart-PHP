@@ -71,7 +71,7 @@ return function (App $app) {
 };
 PHP);
 
-        $rules = $this->analyze(Framework::SLIM, [$file]);
+        $rules = $this->analyze(Framework::$SLIM, [$file]);
 
         self::assertSame(['ROUTE_MISSING_AUTH'], $rules);
     }
@@ -88,7 +88,7 @@ return function (App $app) {
 };
 PHP);
 
-        self::assertSame([], $this->analyze(Framework::SLIM, [$file]));
+        self::assertSame([], $this->analyze(Framework::$SLIM, [$file]));
     }
 
     public function testCodeIgniterFilterIsHonored(): void
@@ -99,7 +99,7 @@ $routes->post('admin/users', 'Admin::store');
 $routes->post('safe/users', 'Admin::store', ['filter' => 'auth']);
 PHP);
 
-        $rules = $this->analyze(Framework::CODEIGNITER4, [$file]);
+        $rules = $this->analyze(Framework::$CODEIGNITER4, [$file]);
 
         self::assertSame(['ROUTE_MISSING_AUTH'], $rules);
     }
@@ -127,7 +127,7 @@ class AdminController
 }
 PHP);
 
-        $rules = $this->analyze(Framework::SYMFONY, [$file]);
+        $rules = $this->analyze(Framework::$SYMFONY, [$file]);
 
         self::assertSame(['ROUTE_MISSING_AUTH'], $rules);
     }
@@ -139,7 +139,7 @@ PHP);
 $app->get('/health', function ($request, $response) { return $response; });
 PHP);
 
-        self::assertSame([], $this->analyze(Framework::SLIM, [$file]));
+        self::assertSame([], $this->analyze(Framework::$SLIM, [$file]));
     }
 
     public function testFuelPhpControllerWithoutBeforeAuthIsReported(): void
@@ -159,7 +159,7 @@ class Controller_Admin extends Controller
 }
 PHP);
 
-        $rules = $this->analyze(Framework::FUELPHP, []);
+        $rules = $this->analyze(Framework::$FUELPHP, []);
 
         self::assertSame(['ROUTE_MISSING_AUTH'], $rules);
     }
@@ -188,7 +188,7 @@ class Controller_Admin extends Controller
 }
 PHP);
 
-        self::assertSame([], $this->analyze(Framework::FUELPHP, []));
+        self::assertSame([], $this->analyze(Framework::$FUELPHP, []));
     }
 
     public function testFuelPhpParentBeforeAuthProtectsTheRoute(): void
@@ -220,7 +220,7 @@ class Controller_Admin extends Controller_Base
 }
 PHP);
 
-        self::assertSame([], $this->analyze(Framework::FUELPHP, []));
+        self::assertSame([], $this->analyze(Framework::$FUELPHP, []));
     }
 
     public function testSymfonyYamlRouteWithoutAuthIsReported(): void
@@ -255,7 +255,7 @@ class AdminController
 }
 PHP);
 
-        $rules = $this->analyze(Framework::SYMFONY, []);
+        $rules = $this->analyze(Framework::$SYMFONY, []);
 
         self::assertSame(['ROUTE_MISSING_AUTH'], $rules);
     }
@@ -291,9 +291,88 @@ class AdminController
 }
 PHP);
 
-        $rules = $this->analyze(Framework::SYMFONY, []);
+        $rules = $this->analyze(Framework::$SYMFONY, []);
 
         self::assertSame(['ROUTE_MISSING_AUTH'], $rules);
         self::assertSame(1, count($rules), 'only /public/users should be reported');
+    }
+
+    public function testPhalconRouteWithoutAuthIsReported(): void
+    {
+        $this->write('app/config/routes.php', <<<'PHP'
+<?php
+$router->addPost('/admin/users', 'Admin::store');
+PHP);
+        $this->write('app/controllers/AdminController.php', <<<'PHP'
+<?php
+class AdminController extends Controller
+{
+    public function store()
+    {
+        return null;
+    }
+}
+PHP);
+
+        self::assertSame(['ROUTE_MISSING_AUTH'], $this->analyze(Framework::$PHALCON, []));
+    }
+
+    public function testPhalconBeforeExecuteRouteAclProtects(): void
+    {
+        $this->write('app/config/routes.php', <<<'PHP'
+<?php
+$router->addPost('/admin/users', 'Admin::store');
+PHP);
+        $this->write('app/controllers/AdminController.php', <<<'PHP'
+<?php
+class AdminController extends Controller
+{
+    public function beforeExecuteRoute()
+    {
+        if (!$this->acl->isAllowed($this->user, 'admin', 'store')) {
+            return false;
+        }
+    }
+
+    public function store()
+    {
+        return null;
+    }
+}
+PHP);
+
+        self::assertSame([], $this->analyze(Framework::$PHALCON, []));
+    }
+
+    public function testPhalconSharedControllerBaseProtects(): void
+    {
+        $this->write('app/config/routes.php', <<<'PHP'
+<?php
+$router->add('/admin/users', 'Admin::store')->via(['POST']);
+PHP);
+        $this->write('app/controllers/ControllerBase.php', <<<'PHP'
+<?php
+class ControllerBase extends Controller
+{
+    public function beforeExecuteRoute()
+    {
+        if (!Auth::check()) {
+            return false;
+        }
+    }
+}
+PHP);
+        $this->write('app/controllers/AdminController.php', <<<'PHP'
+<?php
+class AdminController extends ControllerBase
+{
+    public function store()
+    {
+        return null;
+    }
+}
+PHP);
+
+        self::assertSame([], $this->analyze(Framework::$PHALCON, []));
     }
 }

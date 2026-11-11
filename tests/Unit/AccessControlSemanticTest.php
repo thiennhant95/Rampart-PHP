@@ -119,13 +119,13 @@ final class AccessControlSemanticTest extends TestCase
         // Route B: auth-only → review finding, medium confidence.
         self::assertCount(1, $authIssues);
         self::assertSame('review', $authIssues[0]->metadata['semantic_status'] ?? null);
-        self::assertSame(Confidence::Medium, $authIssues[0]->confidence);
-        self::assertSame(Severity::Error, $authIssues[0]->severity);
+        self::assertSame(Confidence::$Medium, $authIssues[0]->confidence);
+        self::assertSame(Severity::$Error, $authIssues[0]->severity);
 
         // Route C: public → exposed finding, high confidence.
         self::assertCount(1, $publicIssues);
         self::assertSame('exposed', $publicIssues[0]->metadata['semantic_status'] ?? null);
-        self::assertSame(Confidence::High, $publicIssues[0]->confidence);
+        self::assertSame(Confidence::$High, $publicIssues[0]->confidence);
     }
 
     public function testMultiRouteKeepsContextsSeparate(): void
@@ -191,7 +191,7 @@ final class AccessControlSemanticTest extends TestCase
 
         self::assertCount(1, $issues);
         self::assertSame('unknown', $issues[0]->metadata['semantic_status'] ?? null);
-        self::assertSame(Confidence::High, $issues[0]->confidence);
+        self::assertSame(Confidence::$High, $issues[0]->confidence);
     }
 
     public function testCanMiddlewareIsAuthorizationEvidence(): void
@@ -410,7 +410,7 @@ final class AccessControlSemanticTest extends TestCase
         yield 'api' => ['api', MiddlewareTaxonomy::NONE];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('taxonomyCases')]
+    /** @dataProvider taxonomyCases */
     public function testMiddlewareTaxonomy(string $middleware, string $expected): void
     {
         self::assertSame($expected, MiddlewareTaxonomy::classify($middleware));

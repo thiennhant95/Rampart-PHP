@@ -68,7 +68,7 @@ final class PhpcsJsonContractTest extends TestCase
         self::assertSame('PSR2.Files.EndFileNewline.NoneFound', $issues[0]->rule);
         self::assertSame('/app/Http/Controllers/UserController.php', $issues[0]->file);
         self::assertSame(42, $issues[0]->line);
-        self::assertSame(\Rampart\Php\Result\Severity::Error, $issues[0]->severity);
+        self::assertSame(\Rampart\Php\Result\Severity::$Error, $issues[0]->severity);
         self::assertSame('phpcs', $issues[0]->source);
     }
 
@@ -126,8 +126,8 @@ final class PhpcsJsonContractTest extends TestCase
             ],
             array_map(static fn ($issue): string => $issue->rule, $issues)
         );
-        self::assertSame(\Rampart\Php\Result\Severity::Warning, $issues[1]->severity);
-        self::assertSame(\Rampart\Php\Result\Severity::Error, $issues[2]->severity);
+        self::assertSame(\Rampart\Php\Result\Severity::$Warning, $issues[1]->severity);
+        self::assertSame(\Rampart\Php\Result\Severity::$Error, $issues[2]->severity);
         self::assertSame('C:\\app\\Http\\Controllers\\DemoController.php', $issues[0]->file);
     }
 

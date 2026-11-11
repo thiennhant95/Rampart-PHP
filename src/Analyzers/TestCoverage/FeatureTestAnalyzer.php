@@ -38,7 +38,7 @@ final class FeatureTestAnalyzer implements ScanContextAware
                 ),
                 $route['file'],
                 $route['line'],
-                Severity::Info,
+                Severity::$Info,
                 'custom',
                 ['method' => $route['method'], 'uri' => $route['uri'], 'action' => $route['action']]
             );
@@ -56,10 +56,10 @@ final class FeatureTestAnalyzer implements ScanContextAware
     {
         foreach ($featureTests as $body) {
             $uri = trim($route['uri'], '/');
-            if ($uri !== '' && $uri !== '/' && str_contains($body, $uri)) {
+            if ($uri !== '' && $uri !== '/' && strpos($body, $uri) !== false) {
                 return true;
             }
-            if (str_contains($body, $route['uri'])) {
+            if (strpos($body, $route['uri']) !== false) {
                 return true;
             }
 
@@ -122,11 +122,11 @@ final class FeatureTestAnalyzer implements ScanContextAware
 
     private function actionMethod(string $action): ?string
     {
-        if (str_contains($action, '@')) {
+        if (strpos($action, '@') !== false) {
             return substr($action, strrpos($action, '@') + 1);
         }
 
-        if (str_contains($action, '::')) {
+        if (strpos($action, '::') !== false) {
             return substr($action, strrpos($action, '::') + 1);
         }
 

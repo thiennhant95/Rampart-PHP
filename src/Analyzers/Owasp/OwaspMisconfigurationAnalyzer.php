@@ -63,7 +63,7 @@ final class OwaspMisconfigurationAnalyzer extends AbstractAnalyzer
         $basename = strtolower(pathinfo($file, PATHINFO_BASENAME));
 
         // Real Laravel config files live under /config/.
-        if (str_contains($normalized, '/config/')) {
+        if (strpos($normalized, '/config/') !== false) {
             return true;
         }
 
@@ -90,10 +90,10 @@ final class OwaspMisconfigurationAnalyzer extends AbstractAnalyzer
             // Covers `#` (.env), `//` + `#` + `/*` + `*` (PHP).
             if (
                 $trimmed === ''
-                || str_starts_with($trimmed, '#')
-                || str_starts_with($trimmed, '//')
-                || str_starts_with($trimmed, '/*')
-                || str_starts_with($trimmed, '*')
+                || strncmp($trimmed, '#', strlen('#')) === 0
+                || strncmp($trimmed, '//', strlen('//')) === 0
+                || strncmp($trimmed, '/*', strlen('/*')) === 0
+                || strncmp($trimmed, '*', strlen('*')) === 0
             ) {
                 continue;
             }
@@ -104,7 +104,7 @@ final class OwaspMisconfigurationAnalyzer extends AbstractAnalyzer
                     'Debug mode is enabled in production configuration.',
                     $file,
                     $lineNo,
-                    Severity::Warning,
+                    Severity::$Warning,
                     ['kind' => 'debug']
                 );
                 continue;
@@ -116,7 +116,7 @@ final class OwaspMisconfigurationAnalyzer extends AbstractAnalyzer
                     'Permissive CORS configuration detected (wildcard origin).',
                     $file,
                     $lineNo,
-                    Severity::Warning,
+                    Severity::$Warning,
                     ['kind' => 'cors']
                 );
                 continue;
@@ -128,7 +128,7 @@ final class OwaspMisconfigurationAnalyzer extends AbstractAnalyzer
                     'Possible placeholder or empty secret detected.',
                     $file,
                     $lineNo,
-                    Severity::Warning,
+                    Severity::$Warning,
                     ['kind' => 'placeholder']
                 );
                 continue;
@@ -141,7 +141,7 @@ final class OwaspMisconfigurationAnalyzer extends AbstractAnalyzer
                     sprintf('Insecure session cookie flag: %s.', $cookieFlag),
                     $file,
                     $lineNo,
-                    Severity::Warning,
+                    Severity::$Warning,
                     ['kind' => 'cookie']
                 );
             }

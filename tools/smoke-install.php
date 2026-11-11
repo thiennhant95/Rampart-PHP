@@ -119,7 +119,7 @@ try {
             }
             foreach (['tests/', 'tools/', '.github/', 'vendor/', 'phpunit.xml.dist'] as $forbidden) {
                 foreach ($names as $name) {
-                    if (str_starts_with($name, $forbidden)) {
+                    if (strncmp($name, $forbidden, strlen($forbidden)) === 0) {
                         $fail('archive ships development path ' . $forbidden);
                         break;
                     }

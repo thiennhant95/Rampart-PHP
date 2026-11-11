@@ -16,17 +16,47 @@ namespace Rampart\Php\Semantic;
 final class RouteNode
 {
     /**
+     * @var list<string>
+     * @readonly
+     */
+    public array $methods;
+    /**
+     * @readonly
+     */
+    public ?string $uri;
+    /**
+     * @readonly
+     */
+    public ?string $controller;
+    /**
+     * @readonly
+     */
+    public ?string $action;
+    /**
+     * @var list<string>
+     * @readonly
+     */
+    public array $middleware;
+    /**
+     * @readonly
+     */
+    public string $file;
+    /**
+     * @readonly
+     */
+    public ?int $line;
+    /**
      * @param list<string> $methods lowercase HTTP verbs
      * @param list<string> $middleware middleware stack, outermost first
      */
-    public function __construct(
-        public readonly array $methods,
-        public readonly ?string $uri,
-        public readonly ?string $controller,
-        public readonly ?string $action,
-        public readonly array $middleware,
-        public readonly string $file,
-        public readonly ?int $line,
-    ) {
+    public function __construct(array $methods, ?string $uri, ?string $controller, ?string $action, array $middleware, string $file, ?int $line)
+    {
+        $this->methods = $methods;
+        $this->uri = $uri;
+        $this->controller = $controller;
+        $this->action = $action;
+        $this->middleware = $middleware;
+        $this->file = $file;
+        $this->line = $line;
     }
 }

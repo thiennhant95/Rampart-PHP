@@ -16,7 +16,7 @@ final class FixerTest extends TestCase
         mkdir($temp, 0777, true);
 
         try {
-            $ctx = new CheckContext($temp, ['app'], [], $temp . '/reports', noCache: true);
+            $ctx = new CheckContext($temp, ['app'], [], $temp . '/reports', true);
             $fixer = new PhpcsFixer();
 
             self::assertFalse($fixer->isAvailable($ctx));
@@ -100,7 +100,7 @@ final class FixerTest extends TestCase
             ['app'],
             [],
             sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'rampart-fixer-reports',
-            noCache: true
+            true
         );
     }
 

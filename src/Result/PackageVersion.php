@@ -73,7 +73,7 @@ final class PackageVersion
 
         try {
             $version = \Composer\InstalledVersions::getPrettyVersion('rampart/php');
-        } catch (\OutOfBoundsException) {
+        } catch (\OutOfBoundsException $exception) {
             return null;
         }
 

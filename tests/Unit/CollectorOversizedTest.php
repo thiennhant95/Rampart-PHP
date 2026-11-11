@@ -49,6 +49,7 @@ final class CollectorOversizedTest extends TestCase
     {
         $ctx = new CheckContext($this->tmp, [], ['analyzers' => ['max_file_kb' => 1]], $this->tmp);
         $m = new ReflectionMethod(CustomAnalyzerChecker::class, $method);
+        $m->setAccessible(true);
         /** @var array{list<string>, int} $result */
         $result = $m->invoke(new CustomAnalyzerChecker(), $ctx);
 

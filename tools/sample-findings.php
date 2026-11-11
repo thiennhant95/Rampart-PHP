@@ -30,19 +30,19 @@ $seed = 42;
 $outPath = null;
 
 foreach (array_slice($argv, 1) as $arg) {
-    if (str_starts_with($arg, '--n=')) {
+    if (strncmp($arg, '--n=', strlen('--n=')) === 0) {
         $sampleN = max(1, (int) substr($arg, 4));
         continue;
     }
-    if (str_starts_with($arg, '--seed=')) {
+    if (strncmp($arg, '--seed=', strlen('--seed=')) === 0) {
         $seed = (int) substr($arg, 7);
         continue;
     }
-    if (str_starts_with($arg, '--out=')) {
+    if (strncmp($arg, '--out=', strlen('--out=')) === 0) {
         $outPath = substr($arg, 6);
         continue;
     }
-    if (!str_starts_with($arg, '--') && $reportPath === null) {
+    if (strncmp($arg, '--', strlen('--')) !== 0 && $reportPath === null) {
         $reportPath = $arg;
         continue;
     }
@@ -171,7 +171,7 @@ foreach ($sample as $idx => $iss) {
 $csv = '';
 foreach ($rows as $row) {
     $escaped = array_map(static function (string $v): string {
-        if (str_contains($v, ',') || str_contains($v, '"') || str_contains($v, "\n")) {
+        if (strpos($v, ',') !== false || strpos($v, '"') !== false || strpos($v, "\n") !== false) {
             return '"' . str_replace('"', '""', $v) . '"';
         }
         return $v;

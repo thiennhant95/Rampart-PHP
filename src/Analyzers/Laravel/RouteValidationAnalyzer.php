@@ -90,7 +90,7 @@ final class RouteValidationAnalyzer extends AbstractAnalyzer
             return false;
         }
 
-        return str_ends_with($class->name->toString(), 'Controller');
+        return substr_compare($class->name->toString(), 'Controller', -strlen('Controller')) === 0;
     }
 
     /**
@@ -126,9 +126,9 @@ final class RouteValidationAnalyzer extends AbstractAnalyzer
                 sprintf('Mutating method %s() performs no request validation (no $request->validate/FormRequest).', $name),
                 $file,
                 $stmt->getStartLine(),
-                Severity::Warning,
+                Severity::$Warning,
                 ['method' => $name, 'validation_evidence' => null, 'evidence_trail' => $trail->toArray()],
-                Confidence::Medium
+                Confidence::$Medium
             );
         }
 
@@ -212,7 +212,7 @@ final class RouteValidationAnalyzer extends AbstractAnalyzer
 
     private static function isRequestType(string $type): bool
     {
-        return str_ends_with(strtolower(ltrim($type, '\\')), 'request');
+        return substr_compare(strtolower(ltrim($type, '\\')), 'request', -strlen('request')) === 0;
     }
 
     /**
@@ -256,10 +256,10 @@ final class RouteValidationAnalyzer extends AbstractAnalyzer
      */
     private function resolveParam(string $type, array $useMap, ?string $namespace): string
     {
-        if (str_starts_with($type, '\\')) {
+        if (strncmp($type, '\\', strlen('\\')) === 0) {
             return ltrim($type, '\\');
         }
-        if (!str_contains($type, '\\') && isset($useMap[$type])) {
+        if (strpos($type, '\\') === false && isset($useMap[$type])) {
             return $useMap[$type];
         }
         $pos = strpos($type, '\\');
@@ -285,16 +285,16 @@ final class RouteValidationAnalyzer extends AbstractAnalyzer
         // Resolve short names through use-imports: `store(StoreRequest
         // $request)` with `use App\Http\Requests\StoreRequest;` is a
         // FormRequest even though the hint has no backslash.
-        if (!str_contains($type, '\\') && isset($useMap[$type])) {
+        if (strpos($type, '\\') === false && isset($useMap[$type])) {
             $type = $useMap[$type];
         }
 
-        if (str_ends_with($type, 'FormRequest')) {
+        if (substr_compare($type, 'FormRequest', -strlen('FormRequest')) === 0) {
             return true;
         }
 
-        return str_contains($type, '\\')
-            && str_ends_with($type, 'Request')
+        return strpos($type, '\\') !== false
+            && substr_compare($type, 'Request', -strlen('Request')) === 0
             && stripos($type, 'Requests\\') !== false;
     }
 

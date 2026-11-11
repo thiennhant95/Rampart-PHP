@@ -48,10 +48,10 @@ final class RoguePhpAnalyzer implements ScanContextAware
                 sprintf('Rogue PHP file in public/: %s — only index.php should be there.', $file->getPathname()),
                 $file->getPathname(),
                 1,
-                Severity::Critical,
+                Severity::$Critical,
                 'custom',
                 ['file' => $file->getFilename()],
-                Confidence::High
+                Confidence::$High
             );
         }
 

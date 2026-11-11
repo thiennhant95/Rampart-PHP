@@ -39,7 +39,7 @@ final class QualityScoreTest extends TestCase
     public function testCriticalBlocksGate(): void
     {
         $score = QualityScore::score($this->results([
-            $this->issue('HARDCODED_SECRET', Severity::Critical, Confidence::High),
+            $this->issue('HARDCODED_SECRET', Severity::$Critical, Confidence::$High),
         ]));
 
         self::assertSame('BLOCKED', $score['gate']);
@@ -51,7 +51,7 @@ final class QualityScoreTest extends TestCase
     {
         $issues = [];
         for ($i = 0; $i < 170; ++$i) {
-            $issues[] = $this->issue('MISSING_CONTROLLER_TEST', Severity::Warning, Confidence::Low);
+            $issues[] = $this->issue('MISSING_CONTROLLER_TEST', Severity::$Warning, Confidence::$Low);
         }
         $score = QualityScore::score($this->results($issues));
 
@@ -65,7 +65,7 @@ final class QualityScoreTest extends TestCase
     {
         $issues = [];
         for ($i = 0; $i < 137; ++$i) {
-            $issues[] = $this->issue('OWASP_BLADE_XSS', Severity::Warning, Confidence::Medium);
+            $issues[] = $this->issue('OWASP_BLADE_XSS', Severity::$Warning, Confidence::$Medium);
         }
         $score = QualityScore::score($this->results($issues));
 
@@ -77,7 +77,7 @@ final class QualityScoreTest extends TestCase
     public function testHighConfidenceSecurityErrorBlocks(): void
     {
         $score = QualityScore::score($this->results([
-            $this->issue('OWASP_SSRF', Severity::Error, Confidence::High),
+            $this->issue('OWASP_SSRF', Severity::$Error, Confidence::$High),
         ]));
 
         self::assertSame('BLOCKED', $score['gate']);
@@ -87,7 +87,7 @@ final class QualityScoreTest extends TestCase
     public function testMediumErrorIsReviewNotMustFix(): void
     {
         $score = QualityScore::score($this->results([
-            $this->issue('OWASP_SSRF', Severity::Error, Confidence::Medium),
+            $this->issue('OWASP_SSRF', Severity::$Error, Confidence::$Medium),
         ]));
 
         self::assertSame('PASS', $score['gate']);
@@ -97,8 +97,8 @@ final class QualityScoreTest extends TestCase
     public function testDimensionsAndBuckets(): void
     {
         $score = QualityScore::score($this->results([
-            $this->issue('MIGRATION_MISSING_DOWN', Severity::Warning, Confidence::Medium),
-            $this->issue('ROUTE_MISSING_VALIDATION', Severity::Warning, Confidence::Medium),
+            $this->issue('MIGRATION_MISSING_DOWN', Severity::$Warning, Confidence::$Medium),
+            $this->issue('ROUTE_MISSING_VALIDATION', Severity::$Warning, Confidence::$Medium),
         ]));
 
         self::assertArrayHasKey('Database', $score['dimensions']);
@@ -110,9 +110,9 @@ final class QualityScoreTest extends TestCase
     public function testTopMustFixListsRules(): void
     {
         $score = QualityScore::score($this->results([
-            $this->issue('HARDCODED_SECRET', Severity::Critical, Confidence::High),
-            $this->issue('HARDCODED_SECRET', Severity::Critical, Confidence::High),
-            $this->issue('UNSAFE_EVAL', Severity::Critical, Confidence::High),
+            $this->issue('HARDCODED_SECRET', Severity::$Critical, Confidence::$High),
+            $this->issue('HARDCODED_SECRET', Severity::$Critical, Confidence::$High),
+            $this->issue('UNSAFE_EVAL', Severity::$Critical, Confidence::$High),
         ]));
 
         self::assertSame('HARDCODED_SECRET', $score['top_must_fix'][0]['rule']);

@@ -6,18 +6,26 @@ namespace Rampart\Php\Result;
 
 final class Issue
 {
-    public function __construct(
-        public string $rule,
-        public string $message,
-        public ?string $file,
-        public ?int $line,
-        public Severity $severity,
-        public string $source,
-        public array $metadata = [],
-        public Confidence $confidence = Confidence::High,
-    ) {
-    }
+    public string $rule;
+    public string $message;
+    public ?string $file;
+    public ?int $line;
+    public Severity $severity;
+    public string $source;
+    public array $metadata = [];
+    public Confidence $confidence;
 
+    public function __construct(string $rule, string $message, ?string $file, ?int $line, Severity $severity, string $source, array $metadata = [], ?Confidence $confidence = null)
+    {
+        $this->rule = $rule;
+        $this->message = $message;
+        $this->file = $file;
+        $this->line = $line;
+        $this->severity = $severity;
+        $this->source = $source;
+        $this->metadata = $metadata;
+        $this->confidence = $confidence ?? Confidence::$High;
+    }
     public function toArray(): array
     {
         return [
@@ -39,25 +47,21 @@ final class Issue
      */
     public function confidenceScore(): float
     {
-        return match ($this->confidence) {
-            Confidence::High => 1.0,
-            Confidence::Medium => 0.5,
-            Confidence::Low => 0.25,
-        };
+        switch ($this->confidence) {
+            case Confidence::$High:
+                return 1.0;
+            case Confidence::$Medium:
+                return 0.5;
+            case Confidence::$Low:
+                return 0.25;
+            default:
+                return 0.25;
+        }
     }
 
     public static function fromArray(array $data): self
     {
-        return new self(
-            (string) ($data['rule'] ?? 'UNKNOWN'),
-            (string) ($data['message'] ?? ''),
-            isset($data['file']) && $data['file'] !== null ? (string) $data['file'] : null,
-            isset($data['line']) && $data['line'] !== null ? (int) $data['line'] : null,
-            Severity::fromString((string) ($data['severity'] ?? 'error')),
-            (string) ($data['source'] ?? 'custom'),
-            is_array($data['metadata'] ?? null) ? $data['metadata'] : [],
-            Confidence::fromString((string) ($data['confidence'] ?? 'high')),
-        );
+        return new self((string) ($data['rule'] ?? 'UNKNOWN'), (string) ($data['message'] ?? ''), isset($data['file']) && $data['file'] !== null ? (string) $data['file'] : null, isset($data['line']) && $data['line'] !== null ? (int) $data['line'] : null, Severity::fromString((string) ($data['severity'] ?? 'error')), (string) ($data['source'] ?? 'custom'), is_array($data['metadata'] ?? null) ? $data['metadata'] : [], Confidence::fromString((string) ($data['confidence'] ?? 'high')));
     }
 
     /**

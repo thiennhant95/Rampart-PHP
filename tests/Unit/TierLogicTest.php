@@ -22,22 +22,14 @@ final class TierLogicTest extends TestCase
 
     private function context(string $tier, string $minConf = 'low', string $failOn = 'error'): CheckContext
     {
-        return new CheckContext(
-            sys_get_temp_dir(),
-            ['app'],
-            [],
-            sys_get_temp_dir() . '/r',
-            tier: $tier,
-            minConfidence: $minConf,
-            failOn: $failOn,
-        );
+        return new CheckContext(sys_get_temp_dir(), ['app'], [], sys_get_temp_dir() . '/r', false, false, false, '0.0.0', $failOn, [], [], $tier, $minConf);
     }
 
     public function testSecurityTierIgnoresLowConfidenceIssue(): void
     {
         $runner = new CheckRunner($this->context('security'));
         $result = new CheckResult('custom', 'failed', 0.1, [
-            $this->issue(Severity::Critical, Confidence::Low),
+            $this->issue(Severity::$Critical, Confidence::$Low),
         ], null, null);
 
         self::assertFalse($runner->shouldFail([$result]));
@@ -47,7 +39,7 @@ final class TierLogicTest extends TestCase
     {
         $runner = new CheckRunner($this->context('security'));
         $result = new CheckResult('custom', 'failed', 0.1, [
-            $this->issue(Severity::Error, Confidence::High),
+            $this->issue(Severity::$Error, Confidence::$High),
         ], null, null);
 
         self::assertTrue($runner->shouldFail([$result]));
@@ -57,7 +49,7 @@ final class TierLogicTest extends TestCase
     {
         $runner = new CheckRunner($this->context('quality'));
         $result = new CheckResult('custom', 'failed', 0.1, [
-            $this->issue(Severity::Error, Confidence::Medium),
+            $this->issue(Severity::$Error, Confidence::$Medium),
         ], null, null);
 
         self::assertTrue($runner->shouldFail([$result]));
@@ -67,7 +59,7 @@ final class TierLogicTest extends TestCase
     {
         $runner = new CheckRunner($this->context('quality', 'high'));
         $result = new CheckResult('custom', 'failed', 0.1, [
-            $this->issue(Severity::Critical, Confidence::Medium),
+            $this->issue(Severity::$Critical, Confidence::$Medium),
         ], null, null);
 
         self::assertFalse($runner->shouldFail([$result]));
@@ -77,7 +69,7 @@ final class TierLogicTest extends TestCase
     {
         $runner = new CheckRunner($this->context('security'));
         $result = new CheckResult('composer_audit', 'failed', 0.1, [
-            $this->issue(Severity::Error, Confidence::Medium, 'composer_audit'),
+            $this->issue(Severity::$Error, Confidence::$Medium, 'composer_audit'),
         ], null, null);
 
         self::assertTrue($runner->shouldFail([$result]));
@@ -108,13 +100,7 @@ final class TierLogicTest extends TestCase
 
         try {
             $runner = new CheckRunner($this->context('security'));
-            $result = (new CustomAnalyzerChecker())->run(new CheckContext(
-                $dir,
-                ['resources'],
-                ['analyzers' => ['owasp' => ['blade_xss' => true], 'severity_overrides' => $config['analyzers']['severity_overrides']]],
-                $dir . '/out',
-                tier: 'security',
-            ));
+            $result = (new CustomAnalyzerChecker())->run(new CheckContext($dir, ['resources'], ['analyzers' => ['owasp' => ['blade_xss' => true], 'severity_overrides' => $config['analyzers']['severity_overrides']]], $dir . '/out', false, false, false, '0.0.0', 'error', [], [], 'security'));
 
             $blade = array_values(array_filter(
                 $result->issues,
@@ -122,7 +108,7 @@ final class TierLogicTest extends TestCase
             ));
 
             self::assertCount(1, $blade, 'The fixture is reflected XSS and must still be reported.');
-            self::assertSame(Severity::Error, $blade[0]->severity);
+            self::assertSame(Severity::$Error, $blade[0]->severity);
             self::assertTrue(
                 $runner->shouldFail([$result]),
                 'Reflected XSS must fail the security gate.'
@@ -152,13 +138,7 @@ final class TierLogicTest extends TestCase
 
         try {
             $runner = new CheckRunner($this->context('security'));
-            $result = (new CustomAnalyzerChecker())->run(new CheckContext(
-                $dir,
-                ['resources'],
-                ['analyzers' => ['owasp' => ['blade_xss' => true]]],
-                $dir . '/out',
-                tier: 'security',
-            ));
+            $result = (new CustomAnalyzerChecker())->run(new CheckContext($dir, ['resources'], ['analyzers' => ['owasp' => ['blade_xss' => true]]], $dir . '/out', false, false, false, '0.0.0', 'error', [], [], 'security'));
 
             $blade = array_values(array_filter(
                 $result->issues,
@@ -166,7 +146,7 @@ final class TierLogicTest extends TestCase
             ));
 
             self::assertCount(1, $blade);
-            self::assertSame(Severity::Warning, $blade[0]->severity);
+            self::assertSame(Severity::$Warning, $blade[0]->severity);
             self::assertFalse(
                 $runner->shouldFail([$result]),
                 'A model echo must not turn a security build red.'
@@ -198,13 +178,7 @@ final class TierLogicTest extends TestCase
 
         try {
             $runner = new CheckRunner($this->context('security'));
-            $result = (new CustomAnalyzerChecker())->run(new CheckContext(
-                $dir,
-                ['resources'],
-                ['analyzers' => ['owasp' => ['blade_xss' => true], 'severity_overrides' => $overrides]],
-                $dir . '/out',
-                tier: 'security',
-            ));
+            $result = (new CustomAnalyzerChecker())->run(new CheckContext($dir, ['resources'], ['analyzers' => ['owasp' => ['blade_xss' => true], 'severity_overrides' => $overrides]], $dir . '/out', false, false, false, '0.0.0', 'error', [], [], 'security'));
 
             $found = array_values(array_filter(
                 $result->issues,
@@ -212,7 +186,7 @@ final class TierLogicTest extends TestCase
             ));
 
             self::assertCount(1, $found, 'The finding must still be reported.');
-            self::assertSame(Severity::Info, $found[0]->severity);
+            self::assertSame(Severity::$Info, $found[0]->severity);
             self::assertFalse(
                 $runner->shouldFail([$result]),
                 'A dynamic view name must not fail the gate by default.'
@@ -242,15 +216,9 @@ final class TierLogicTest extends TestCase
 
         try {
             $runner = new CheckRunner($this->context('quality'));
-            $result = (new CustomAnalyzerChecker())->run(new CheckContext(
-                $dir,
-                ['resources'],
-                ['analyzers' => ['owasp' => ['blade_xss' => true], 'severity_overrides' => [
-                    'OWASP_BLADE_DYNAMIC_INCLUDE' => 'error',
-                ]]],
-                $dir . '/out',
-                tier: 'quality',
-            ));
+            $result = (new CustomAnalyzerChecker())->run(new CheckContext($dir, ['resources'], ['analyzers' => ['owasp' => ['blade_xss' => true], 'severity_overrides' => [
+                'OWASP_BLADE_DYNAMIC_INCLUDE' => 'error',
+            ]]], $dir . '/out', false, false, false, '0.0.0', 'error', [], [], 'quality'));
 
             self::assertTrue(
                 $runner->shouldFail([$result]),
@@ -281,20 +249,8 @@ final class TierLogicTest extends TestCase
 
         try {
             $checker = new CustomAnalyzerChecker();
-            $low = new CheckContext(
-                $dir,
-                ['Todo.php'],
-                ['analyzers' => ['convention' => ['todo_fixme' => true]], 'min_confidence' => 'high'],
-                $dir . '/out',
-                minConfidence: 'low',
-            );
-            $high = new CheckContext(
-                $dir,
-                ['Todo.php'],
-                ['analyzers' => ['convention' => ['todo_fixme' => true]], 'min_confidence' => 'high'],
-                $dir . '/out',
-                minConfidence: 'high',
-            );
+            $low = new CheckContext($dir, ['Todo.php'], ['analyzers' => ['convention' => ['todo_fixme' => true]], 'min_confidence' => 'high'], $dir . '/out', false, false, false, '0.0.0', 'error', [], [], 'quality', 'low');
+            $high = new CheckContext($dir, ['Todo.php'], ['analyzers' => ['convention' => ['todo_fixme' => true]], 'min_confidence' => 'high'], $dir . '/out', false, false, false, '0.0.0', 'error', [], [], 'quality', 'high');
 
             $lowConfidence = $checker->run($low)->issues;
             $highConfidence = $checker->run($high)->issues;

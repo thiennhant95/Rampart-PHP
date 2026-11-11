@@ -51,7 +51,7 @@ final class PolicyRegistry implements ScanContextAware
         $this->files = $files;
         foreach ($files as $file) {
             $base = strtolower(str_replace('\\', '/', $file));
-            if (!str_ends_with($base, 'serviceprovider.php') && !str_contains($base, '/providers/')) {
+            if (substr_compare($base, 'serviceprovider.php', -strlen('serviceprovider.php')) !== 0 && strpos($base, '/providers/') === false) {
                 continue;
             }
             if (strtolower((string) pathinfo($file, PATHINFO_EXTENSION)) !== 'php') {
@@ -220,7 +220,7 @@ final class PolicyRegistry implements ScanContextAware
             if (strtolower((string) pathinfo($normalized, PATHINFO_BASENAME)) !== strtolower($short . '.php')) {
                 continue;
             }
-            if (str_contains(strtolower($normalized), '/policies/')) {
+            if (strpos(strtolower($normalized), '/policies/') !== false) {
                 return $file;
             }
             $fallback ??= $file;

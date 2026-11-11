@@ -42,7 +42,7 @@ final class BladeStackAnalyzer implements ScanContextAware
     public function analyze(array $files): array
     {
         // Only inspect once per run — collect all blade files
-        $bladeFiles = array_values(array_filter($files, fn (string $f): bool => str_ends_with(strtolower($f), '.blade.php')));
+        $bladeFiles = array_values(array_filter($files, fn (string $f): bool => substr_compare(strtolower($f), '.blade.php', -strlen('.blade.php')) === 0));
         if ($bladeFiles === []) {
             return [];
         }
@@ -103,10 +103,10 @@ final class BladeStackAnalyzer implements ScanContextAware
                 'Blade stack block unclosed: ' . $msg . '.',
                 $file,
                 1,
-                Severity::Error,
+                Severity::$Error,
                 'custom',
                 ['kind' => 'unclosed_block'],
-                Confidence::High
+                Confidence::$High
             );
         }
 
@@ -118,10 +118,10 @@ final class BladeStackAnalyzer implements ScanContextAware
                     sprintf('@push(\'%s\') has no matching @stack(\'%s\') — content will never render (typo?).', $name, $name),
                     $sample,
                     1,
-                    Severity::Warning,
+                    Severity::$Warning,
                     'custom',
                     ['kind' => 'orphan_push', 'stack' => $name, 'files' => $files],
-                    Confidence::Medium
+                    Confidence::$Medium
                 );
             }
         }
@@ -134,10 +134,10 @@ final class BladeStackAnalyzer implements ScanContextAware
                     sprintf('@stack(\'%s\') has no matching @push — stack will always be empty.', $name),
                     $sample,
                     1,
-                    Severity::Info,
+                    Severity::$Info,
                     'custom',
                     ['kind' => 'empty_stack', 'stack' => $name],
-                    Confidence::Low
+                    Confidence::$Low
                 );
             }
         }
@@ -147,6 +147,6 @@ final class BladeStackAnalyzer implements ScanContextAware
 
     public function supports(string $path): bool
     {
-        return str_ends_with(strtolower($path), '.blade.php');
+        return substr_compare(strtolower($path), '.blade.php', -strlen('.blade.php')) === 0;
     }
 }
