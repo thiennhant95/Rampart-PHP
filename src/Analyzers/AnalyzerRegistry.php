@@ -97,27 +97,27 @@ final class AnalyzerRegistry
             self::entry($analyzers, 'owasp.open_redirect', new OwaspOpenRedirectAnalyzer()),
             self::entry($analyzers, 'owasp.misconfiguration', new OwaspMisconfigurationAnalyzer()),
             self::entry($analyzers, 'owasp.xxe', new OwaspXxeAnalyzer()),
-            self::entry($analyzers, 'owasp.blade_xss', new OwaspBladeXssAnalyzer(
+            self::laravelEntry($analyzers, 'owasp.blade_xss', new OwaspBladeXssAnalyzer(
                 ['extra_sanitizers' => $analyzers['extra_sanitizers'] ?? []]
-            )),
+            ), $isLaravel),
 
             // --- Framework routing (profile-aware) --------------------------
             self::entry($analyzers, 'framework.route_auth', new RouteAuthAnalyzer($profile)),
 
             // --- Laravel-only semantics (no-op elsewhere) -------------------
-            self::entry($analyzers, 'security.mass_assignment', new \Rampart\Php\Analyzers\Security\MassAssignmentAnalyzer(
+            self::laravelEntry($analyzers, 'security.mass_assignment', new \Rampart\Php\Analyzers\Security\MassAssignmentAnalyzer(
                 ['models_dirs' => $analyzers['models_dirs'] ?? ['app/Models']]
-            )),
-            self::entry($analyzers, 'security.auth_hardening', new AuthHardeningAnalyzer()),
-            self::entry($analyzers, 'security.disabled_csrf', new DisabledCsrfAnalyzer()),
-            self::entry($analyzers, 'security.laravel_taint', new LaravelTaintAnalyzer()),
-            self::entry($analyzers, 'owasp.broken_access_control', new OwaspAccessControlAnalyzer(
+            ), $isLaravel),
+            self::laravelEntry($analyzers, 'security.auth_hardening', new AuthHardeningAnalyzer(), $isLaravel),
+            self::laravelEntry($analyzers, 'security.disabled_csrf', new DisabledCsrfAnalyzer(), $isLaravel),
+            self::laravelEntry($analyzers, 'security.laravel_taint', new LaravelTaintAnalyzer(), $isLaravel),
+            self::laravelEntry($analyzers, 'owasp.broken_access_control', new OwaspAccessControlAnalyzer(
                 (bool) ($analyzers['owasp']['route_middleware'] ?? true),
                 ['extra_middleware' => $analyzers['extra_middleware'] ?? []]
-            )),
-            self::entry($analyzers, 'owasp.ownership_idor', new OwaspOwnershipAnalyzer()),
-            self::entry($analyzers, 'laravel.migration', new MigrationAnalyzer()),
-            self::entry($analyzers, 'laravel.route_validation', new RouteValidationAnalyzer(), $isLaravel),
+            ), $isLaravel),
+            self::laravelEntry($analyzers, 'owasp.ownership_idor', new OwaspOwnershipAnalyzer(), $isLaravel),
+            self::laravelEntry($analyzers, 'laravel.migration', new MigrationAnalyzer(), $isLaravel),
+            self::laravelEntry($analyzers, 'laravel.route_validation', new RouteValidationAnalyzer(), $isLaravel),
 
             // --- Test coverage / convention / frontend / ops -----------------
             self::entry($analyzers, 'test_coverage.missing_controller_test', new ControllerTestAnalyzer()),
@@ -129,12 +129,33 @@ final class AnalyzerRegistry
             self::entry($analyzers, 'convention.naming_convention', new NamingConventionAnalyzer()),
             self::entry($analyzers, 'convention.todo_fixme', new TodoFixmeAnalyzer()),
             self::entry($analyzers, 'convention.dead_code', new DeadCodeAnalyzer()),
-            self::entry($analyzers, 'convention.laravel_pitfall', new LaravelPitfallAnalyzer()),
+            self::laravelEntry($analyzers, 'convention.laravel_pitfall', new LaravelPitfallAnalyzer(), $isLaravel),
             self::entry($analyzers, 'frontend.js_syntax', new JsSyntaxAnalyzer()),
             self::entry($analyzers, 'frontend.css_syntax', new CssSyntaxAnalyzer()),
-            self::entry($analyzers, 'frontend.blade_stack', new BladeStackAnalyzer()),
+            self::laravelEntry($analyzers, 'frontend.blade_stack', new BladeStackAnalyzer(), $isLaravel),
             self::entry($analyzers, 'ops.perms', new PermsAnalyzer()),
             self::entry($analyzers, 'ops.eol', new EolAnalyzer()),
+        ];
+    }
+
+    /**
+     * Laravel-only analyzers stay silent on other frameworks. Their rules are
+     * bound to Eloquent/Blade/middleware semantics; running them on Phalcon or
+     * plain PHP produced "mutating method without authorize()" false positives.
+     *
+     * @param array<string, mixed> $analyzers
+     * @return array{enabled: bool, analyzer: object}
+     */
+    private static function laravelEntry(array $analyzers, string $key, object $analyzer, bool $isLaravel): array
+    {
+        $parts = explode('.', $key);
+        $group = $parts[0];
+        $rule = $parts[1];
+        $configured = (bool) ($analyzers[$group][$rule] ?? false);
+
+        return [
+            'enabled' => $isLaravel && $configured,
+            'analyzer' => $analyzer,
         ];
     }
 

@@ -11,6 +11,21 @@ This page records the reasoning behind the rules that are easy to misread.
 A `low`-confidence `Warning` (for example `ROUTE_MISSING_AUTH`) never fails the
 default `--fail-on=error` gate. A `high`-confidence `Critical` always does.
 
+## Laravel-only rules
+
+These run only when the target is detected as Laravel:
+
+- `OWASP_BROKEN_ACCESS_CONTROL`, `OWASP_OWNERSHIP_IDOR`
+- `MASS_ASSIGNMENT`, `LARAVEL_TAINT`, `SESSION_FIXATION`,
+  `WEAK_PASSWORD_POLICY`, `DISABLED_CSRF_*`
+- `MIGRATION_*`, `ROUTE_MISSING_VALIDATION`
+- `OWASP_BLADE_XSS`, `OWASP_BLADE_DYNAMIC_INCLUDE`, `BLADE_STACK_MISMATCH`
+- `LARAVEL_PITFALL_*`
+
+Other frameworks get `ROUTE_MISSING_AUTH`, `XSS_ECHO`, `SQL_INJECTION` and the
+generic OWASP rules instead. This prevents Eloquent/Blade heuristics from
+producing false positives on Phalcon, Slim, CI4 or plain PHP.
+
 ## Rules that are intentionally conservative
 
 | Rule | Why it is narrow |

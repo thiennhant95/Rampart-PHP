@@ -22,7 +22,9 @@ final class CustomAnalyzerChecker extends AnalyzerChecker
     public function run(CheckContext $ctx): CheckResult
     {
         if ($ctx->frameworkProfile === null) {
-            $ctx->frameworkProfile = FrameworkProfile::for(Framework::$PLAIN);
+            // This class is the legacy Laravel-shaped entry point; generic
+            // callers use AnalyzerChecker with a detected profile.
+            $ctx->frameworkProfile = FrameworkProfile::for(Framework::$LARAVEL);
         }
 
         return parent::run($ctx);

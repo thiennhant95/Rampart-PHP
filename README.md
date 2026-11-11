@@ -61,7 +61,7 @@ Outputs: `rampart-report.html`, `rampart-report.json`, `rampart-report.md`,
 | `slimphp/Slim-Skeleton` | **0 findings** |
 | `codeigniter4/appstarter` | **0 findings** |
 | `thiennhant95/Rampart` (Laravel-flavoured library) | **1 finding** (PHP 8.1 EOL only) |
-| Test suite | `1424 tests, 3432 assertions` on PHP 7.4 **and** 8.2, PHPStan `[OK]`, PHPCS clean |
+| Test suite | `1424 tests, 3433 assertions` on PHP 7.4 **and** 8.2, PHPStan `[OK]`, PHPCS clean |
 
 This is a snapshot, not a live benchmark. Use
 [tools/benchmark-projects.php](tools/benchmark-projects.php) on your own
@@ -137,6 +137,12 @@ this table cannot drift from what the analyzers emit.
 
 Severity is what the rule emits; confidence is the noise rating (`high` is safe
 to gate CI on, `low` is a heuristic hint).
+
+Laravel-bound analyzers (access control/IDOR, mass assignment, CSRF/session
+hardening, migrations, Blade, route validation) run only when the target is
+detected as Laravel. Other frameworks use the generic equivalents
+(`ROUTE_MISSING_AUTH`, `XSS_ECHO`, `SQL_INJECTION`, ...), so a Phalcon or Slim
+controller is not judged by Eloquent/Blade semantics.
 
 ### Security (`analyzers/security`)
 
