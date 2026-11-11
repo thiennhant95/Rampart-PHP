@@ -157,7 +157,7 @@ final class SarifReporter implements ReporterInterface
         $cfg = $ctx->configFor('html');
         $repo = rtrim(trim((string) ($cfg['repo_url'] ?? '')), '/');
         if ($repo === '') {
-            $repo = 'https://github.com/thiennhant95/rampart-php';
+            $repo = 'https://github.com/thiennhant95/Rampart-PHP';
         }
 
         return $repo;
