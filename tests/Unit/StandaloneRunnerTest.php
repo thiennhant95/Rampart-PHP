@@ -277,6 +277,8 @@ final class StandaloneRunnerTest extends TestCase
     {
         $this->dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'qc-standalone-' . uniqid('', true);
         $this->out = $this->dir . DIRECTORY_SEPARATOR . 'out';
+        @mkdir($this->dir . DIRECTORY_SEPARATOR . 'routes', 0777, true);
+        file_put_contents($this->dir . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'web.php', "<?php\n");
         $controllerDir = $this->dir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Http'
             . ($subdir === '' ? '' : DIRECTORY_SEPARATOR . $subdir);
         @mkdir($controllerDir, 0777, true);
