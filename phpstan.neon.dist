@@ -1,0 +1,19 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: 6
+    # Finder generics already narrow node types; re-checking with
+    # instanceof/is_string is deliberate defensive code, not a bug.
+    treatPhpDocTypesAsCertain: false
+    paths:
+        - src
+        - tests
+        - tools
+    excludePaths:
+        - tests/*/fixtures/*
+        - tests/**/fixtures/*
+    tmpDir: build/phpstan
+    phpVersion: 80200
+    parallel:
+        maximumNumberOfProcesses: 1

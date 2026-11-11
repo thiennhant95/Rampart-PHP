@@ -1,0 +1,1153 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\AbstractAnalyzer\:\:makeIssue\(\) has parameter \$metadata with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/AbstractAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Convention\\DeadCodeAnalyzer\:\:analyze\(\) has parameter \$files with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Convention/DeadCodeAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Convention\\DeadCodeAnalyzer\:\:analyze\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Convention/DeadCodeAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Convention\\DeadCodeAnalyzer\:\:analyzeFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Convention/DeadCodeAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Convention\\LaravelPitfallAnalyzer\:\:analyze\(\) has parameter \$files with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Convention/LaravelPitfallAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Convention\\LaravelPitfallAnalyzer\:\:analyze\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Convention/LaravelPitfallAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Convention\\LaravelPitfallAnalyzer\:\:analyzeFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Convention/LaravelPitfallAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Convention\\NamingConventionAnalyzer\:\:analyze\(\) has parameter \$files with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Convention/NamingConventionAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Convention\\NamingConventionAnalyzer\:\:analyze\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Convention/NamingConventionAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Convention\\NamingConventionAnalyzer\:\:analyzeFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Convention/NamingConventionAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Convention\\TodoFixmeAnalyzer\:\:analyze\(\) has parameter \$files with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Convention/TodoFixmeAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Convention\\TodoFixmeAnalyzer\:\:analyze\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Convention/TodoFixmeAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Convention\\TodoFixmeAnalyzer\:\:analyzeFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Convention/TodoFixmeAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Laravel\\MigrationAnalyzer\:\:analyzeFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Laravel/MigrationAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Laravel\\RouteValidationAnalyzer\:\:analyzeFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Laravel/RouteValidationAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Owasp\\OwaspAccessControlAnalyzer\:\:analyzeFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Owasp/OwaspAccessControlAnalyzer.php
+
+		-
+			message: '#^Offset ''class'' on null on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: src/Analyzers/Owasp/OwaspAccessControlAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Owasp\\OwaspCommandInjectionAnalyzer\:\:analyzeFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Owasp/OwaspCommandInjectionAnalyzer.php
+
+		-
+			message: '#^Constant Rampart\\Php\\Analyzers\\Owasp\\OwaspMisconfigurationAnalyzer\:\:CONFIG_FILES is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: src/Analyzers/Owasp/OwaspMisconfigurationAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Owasp\\OwaspMisconfigurationAnalyzer\:\:analyzeFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Owasp/OwaspMisconfigurationAnalyzer.php
+
+		-
+			message: '#^Instanceof between PhpParser\\Node\\Expr and PhpParser\\Node\\Expr will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 3
+			path: src/Analyzers/Owasp/OwaspOwnershipAnalyzer.php
+
+		-
+			message: '#^Property Rampart\\Php\\Semantic\\RouteNode\:\:\$file \(string\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: src/Analyzers/Owasp/OwaspOwnershipAnalyzer.php
+
+		-
+			message: '#^Property Rampart\\Php\\Semantic\\RouteNode\:\:\$methods \(list\<string\>\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: src/Analyzers/Owasp/OwaspOwnershipAnalyzer.php
+
+		-
+			message: '#^Property Rampart\\Php\\Semantic\\RouteNode\:\:\$middleware \(list\<string\>\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: src/Analyzers/Owasp/OwaspOwnershipAnalyzer.php
+
+		-
+			message: '#^Access to an undefined property PhpParser\\Node\:\:\$args\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Analyzers/Owasp/OwaspSsrfAnalyzer.php
+
+		-
+			message: '#^Instanceof between PhpParser\\Node\\Name and PhpParser\\Node\\Name will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Analyzers/Owasp/OwaspSsrfAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Owasp\\OwaspSsrfAnalyzer\:\:analyzeFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Owasp/OwaspSsrfAnalyzer.php
+
+		-
+			message: '#^Constant Rampart\\Php\\Analyzers\\Owasp\\OwaspSstiAnalyzer\:\:STATIC_SINKS is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: src/Analyzers/Owasp/OwaspSstiAnalyzer.php
+
+		-
+			message: '#^Instanceof between PhpParser\\Node\\Identifier and PhpParser\\Node\\Identifier will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Analyzers/Owasp/OwaspSstiAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Owasp\\OwaspSstiAnalyzer\:\:analyzeFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Owasp/OwaspSstiAnalyzer.php
+
+		-
+			message: '#^Constant Rampart\\Php\\Analyzers\\Owasp\\OwaspXxeAnalyzer\:\:FUNC_SINKS is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: src/Analyzers/Owasp/OwaspXxeAnalyzer.php
+
+		-
+			message: '#^Instanceof between PhpParser\\Node\\Name and PhpParser\\Node\\Name will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Analyzers/Owasp/OwaspXxeAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Owasp\\OwaspXxeAnalyzer\:\:analyzeFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Owasp/OwaspXxeAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Owasp\\OwaspXxeAnalyzer\:\:hasGuard\(\) has parameter \$ast with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Owasp/OwaspXxeAnalyzer.php
+
+		-
+			message: '#^Instanceof between PhpParser\\Node\\Identifier and PhpParser\\Node\\Identifier will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Analyzers/Security/AuthHardeningAnalyzer.php
+
+		-
+			message: '#^Instanceof between PhpParser\\Node\\Name and PhpParser\\Node\\Name will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Analyzers/Security/DisabledCsrfAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\DisabledCsrfAnalyzer\:\:analyze\(\) has parameter \$files with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/DisabledCsrfAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\DisabledCsrfAnalyzer\:\:analyze\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/DisabledCsrfAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\DisabledCsrfAnalyzer\:\:analyzeFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/DisabledCsrfAnalyzer.php
+
+		-
+			message: '#^Access to property \$left on an unknown class PhpParser\\Node\\Expr\\Coalesce\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Analyzers/Security/HeaderInjectionAnalyzer.php
+
+		-
+			message: '#^Access to property \$right on an unknown class PhpParser\\Node\\Expr\\Coalesce\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Analyzers/Security/HeaderInjectionAnalyzer.php
+
+		-
+			message: '#^Class PhpParser\\Node\\Expr\\Coalesce not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Analyzers/Security/HeaderInjectionAnalyzer.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''header'' and ''header'' will always evaluate to true\.$#'
+			identifier: identical.alwaysTrue
+			count: 1
+			path: src/Analyzers/Security/HeaderInjectionAnalyzer.php
+
+		-
+			message: '#^Instanceof between PhpParser\\Node\\Identifier and PhpParser\\Node\\Identifier will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Analyzers/Security/InsecureHashAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\InsecureHashAnalyzer\:\:isCredentialContext\(\) has parameter \$ast with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/InsecureHashAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\LaravelTaintAnalyzer\:\:analyze\(\) has parameter \$files with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/LaravelTaintAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\LaravelTaintAnalyzer\:\:analyze\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/LaravelTaintAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\LaravelTaintAnalyzer\:\:analyzeFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/LaravelTaintAnalyzer.php
+
+		-
+			message: '#^Access to property \$left on an unknown class PhpParser\\Node\\Expr\\Coalesce\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Analyzers/Security/LdapInjectionAnalyzer.php
+
+		-
+			message: '#^Access to property \$right on an unknown class PhpParser\\Node\\Expr\\Coalesce\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Analyzers/Security/LdapInjectionAnalyzer.php
+
+		-
+			message: '#^Class PhpParser\\Node\\Expr\\Coalesce not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Analyzers/Security/LdapInjectionAnalyzer.php
+
+		-
+			message: '#^Instanceof between PhpParser\\Node\\Name and PhpParser\\Node\\Name will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Analyzers/Security/MassAssignmentAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\MassAssignmentAnalyzer\:\:analyze\(\) has parameter \$files with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/MassAssignmentAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\MassAssignmentAnalyzer\:\:analyze\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/MassAssignmentAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\MassAssignmentAnalyzer\:\:analyzeFile\(\) has parameter \$modelClassFiles with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/MassAssignmentAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\MassAssignmentAnalyzer\:\:analyzeFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/MassAssignmentAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\MassAssignmentAnalyzer\:\:findIssues\(\) has parameter \$ast with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/MassAssignmentAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\MassAssignmentAnalyzer\:\:findIssues\(\) has parameter \$modelClassFiles with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/MassAssignmentAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\MassAssignmentAnalyzer\:\:findIssues\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/MassAssignmentAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\MassAssignmentAnalyzer\:\:modelDefinesMassAssignmentGuard\(\) has parameter \$modelClassFiles with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/MassAssignmentAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\MassAssignmentAnalyzer\:\:modelExists\(\) has parameter \$modelClassFiles with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/MassAssignmentAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\MassAssignmentAnalyzer\:\:resolveClassName\(\) should return array\{string, string\|null\} but returns array\{null, null\}\.$#'
+			identifier: return.type
+			count: 2
+			path: src/Analyzers/Security/MassAssignmentAnalyzer.php
+
+		-
+			message: '#^Access to an undefined property PhpParser\\Node\:\:\$args\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Analyzers/Security/SqlInjectionAnalyzer.php
+
+		-
+			message: '#^Access to an undefined property PhpParser\\Node\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Analyzers/Security/SqlInjectionAnalyzer.php
+
+		-
+			message: '#^Access to property \$left on an unknown class PhpParser\\Node\\Expr\\Coalesce\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Analyzers/Security/SqlInjectionAnalyzer.php
+
+		-
+			message: '#^Access to property \$right on an unknown class PhpParser\\Node\\Expr\\Coalesce\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Analyzers/Security/SqlInjectionAnalyzer.php
+
+		-
+			message: '#^Class PhpParser\\Node\\Expr\\Coalesce not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Analyzers/Security/SqlInjectionAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\SqlInjectionAnalyzer\:\:analyzeFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/SqlInjectionAnalyzer.php
+
+		-
+			message: '#^Access to an undefined property PhpParser\\Node\\FunctionLike\:\:\$params\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Instanceof between PhpParser\\Node\\Expr\\ArrayDimFetch and PhpParser\\Node\\Expr\\ArrayDimFetch will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:analyze\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:analyzeCalleeBody\(\) has parameter \$tainted with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:analyzeFile\(\) has parameter \$index with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:handleAssignment\(\) has parameter \$tainted with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:handleCall\(\) has parameter \$tainted with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:handleConcat\(\) has parameter \$tainted with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:handleInterpolated\(\) has parameter \$tainted with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:handleReturn\(\) has parameter \$tainted with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:isExpressionSource\(\) has parameter \$expr with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:isExpressionSource\(\) has parameter \$tainted with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:isExpressionTainted\(\) has parameter \$expr with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:isExpressionTainted\(\) has parameter \$tainted with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:isSourceCall\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:isStringInterpolatedTainted\(\) has parameter \$tainted with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:isStringInterpolatedTainted\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:markAssignmentSource\(\) has parameter \$tainted with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:propagateArgs\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:propagateArgs\(\) has parameter \$tainted with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:reportSink\(\) has parameter \$args with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:reportSink\(\) has parameter \$tainted with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:resolveCall\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:resolveCallee\(\) never returns PhpParser\\Node\\FunctionLike so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:resolveCallee\(\) should return PhpParser\\Node\\FunctionLike\|null but returns array\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Parameter &\$tainted by\-ref type of method Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:walkNodes\(\) expects array\<string, bool\>, array given\.$#'
+			identifier: parameterByRef.type
+			count: 7
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Property Rampart\\Php\\Analyzers\\Security\\Taint\\TaintEngine\:\:\$fileIndex type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintEngine.php
+
+		-
+			message: '#^Property Rampart\\Php\\Analyzers\\Security\\Taint\\TaintSourceResolver\:\:\$facades type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/Taint/TaintSourceResolver.php
+
+		-
+			message: '#^Instanceof between PhpParser\\Node\\Name and PhpParser\\Node\\Name will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Analyzers/Security/UnsafeDeserializationAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\UnsafeDeserializationAnalyzer\:\:analyze\(\) has parameter \$files with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/UnsafeDeserializationAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\UnsafeDeserializationAnalyzer\:\:analyze\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/UnsafeDeserializationAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\UnsafeDeserializationAnalyzer\:\:analyzeFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/UnsafeDeserializationAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\Security\\UnsafeEvalAnalyzer\:\:analyzeFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/Security/UnsafeEvalAnalyzer.php
+
+		-
+			message: '#^Access to property \$left on an unknown class PhpParser\\Node\\Expr\\Coalesce\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Analyzers/Security/XssEchoAnalyzer.php
+
+		-
+			message: '#^Access to property \$right on an unknown class PhpParser\\Node\\Expr\\Coalesce\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Analyzers/Security/XssEchoAnalyzer.php
+
+		-
+			message: '#^Class PhpParser\\Node\\Expr\\Coalesce not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Analyzers/Security/XssEchoAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\ControllerTestAnalyzer\:\:analyze\(\) has parameter \$files with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/ControllerTestAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\ControllerTestAnalyzer\:\:analyze\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/ControllerTestAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\ControllerTestAnalyzer\:\:analyzeControllerFile\(\) has parameter \$featureTests with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/ControllerTestAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\ControllerTestAnalyzer\:\:analyzeControllerFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/ControllerTestAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\ControllerTestAnalyzer\:\:collectFeatureTestBodies\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/ControllerTestAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\ControllerTestAnalyzer\:\:findControllerTestFiles\(\) has parameter \$featureTests with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/ControllerTestAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\ControllerTestAnalyzer\:\:findControllerTestFiles\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/ControllerTestAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\ControllerTestAnalyzer\:\:listPhpFiles\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/ControllerTestAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\ControllerTestAnalyzer\:\:methodIsTested\(\) has parameter \$testFiles with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/ControllerTestAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\FeatureTestAnalyzer\:\:analyze\(\) has parameter \$files with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/FeatureTestAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\FeatureTestAnalyzer\:\:analyze\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/FeatureTestAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\FeatureTestAnalyzer\:\:collectFeatureTestBodies\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/FeatureTestAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\FeatureTestAnalyzer\:\:collectRoutes\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/FeatureTestAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\FeatureTestAnalyzer\:\:listPhpFiles\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/FeatureTestAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\FeatureTestAnalyzer\:\:parseRoutesFromSource\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/FeatureTestAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\FeatureTestAnalyzer\:\:routeIsCovered\(\) has parameter \$featureTests with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/FeatureTestAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\FeatureTestAnalyzer\:\:routeIsCovered\(\) has parameter \$route with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/FeatureTestAnalyzer.php
+
+		-
+			message: '#^Instanceof between PhpParser\\Node\\Name and PhpParser\\Node\\Name will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Analyzers/TestCoverage/TestCoverageAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\TestCoverageAnalyzer\:\:classIdentity\(\) has parameter \$ast with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/TestCoverageAnalyzer.php
+
+		-
+			message: '#^Constant Rampart\\Php\\Analyzers\\TestCoverage\\TestWithoutAssertAnalyzer\:\:ASSERT_RE is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: src/Analyzers/TestCoverage/TestWithoutAssertAnalyzer.php
+
+		-
+			message: '#^Instanceof between PhpParser\\Node\\Identifier and PhpParser\\Node\\Identifier will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Analyzers/TestCoverage/TestWithoutAssertAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\TestWithoutAssertAnalyzer\:\:analyze\(\) has parameter \$files with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/TestWithoutAssertAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\TestWithoutAssertAnalyzer\:\:analyze\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/TestWithoutAssertAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\TestWithoutAssertAnalyzer\:\:analyzeFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/TestWithoutAssertAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Analyzers\\TestCoverage\\TestWithoutAssertAnalyzer\:\:hasAssertion\(\) has parameter \$body with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Analyzers/TestCoverage/TestWithoutAssertAnalyzer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Baseline\\BaselineFilter\:\:filter\(\) has parameter \$results with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Baseline/BaselineFilter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Baseline\\BaselineFilter\:\:filter\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Baseline/BaselineFilter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Baseline\\BaselineFilter\:\:issueList\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Baseline/BaselineFilter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Baseline\\BaselineFilter\:\:setIssues\(\) has parameter \$issues with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Baseline/BaselineFilter.php
+
+		-
+			message: '#^Constant Rampart\\Php\\Baseline\\BaselineManager\:\:DEFAULT_FILENAME is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: src/Baseline/BaselineManager.php
+
+		-
+			message: '#^Method Rampart\\Php\\Baseline\\BaselineManager\:\:isBaselined\(\) has parameter \$issue with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Baseline/BaselineManager.php
+
+		-
+			message: '#^Method Rampart\\Php\\Baseline\\BaselineManager\:\:signature\(\) has parameter \$issue with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Baseline/BaselineManager.php
+
+		-
+			message: '#^Method Rampart\\Php\\Baseline\\BaselineManager\:\:update\(\) has parameter \$results with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Baseline/BaselineManager.php
+
+		-
+			message: '#^Method Rampart\\Php\\Checkers\\AbstractProcessChecker\:\:result\(\) has parameter \$issues with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Checkers/AbstractProcessChecker.php
+
+		-
+			message: '#^Method Rampart\\Php\\Checkers\\AnalyzerChecker\:\:config\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Checkers/AnalyzerChecker.php
+
+		-
+			message: '#^Method Rampart\\Php\\Checkers\\CheckerInterface\:\:config\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Checkers/CheckerInterface.php
+
+		-
+			message: '#^Method Rampart\\Php\\Checkers\\ComposerAuditChecker\:\:config\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Checkers/ComposerAuditChecker.php
+
+		-
+			message: '#^Method Rampart\\Php\\Checkers\\ComposerAuditChecker\:\:parseOutput\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Checkers/ComposerAuditChecker.php
+
+		-
+			message: '#^Method Rampart\\Php\\Checkers\\PhpcsChecker\:\:config\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Checkers/PhpcsChecker.php
+
+		-
+			message: '#^Method Rampart\\Php\\Checkers\\PhpstanChecker\:\:config\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Checkers/PhpstanChecker.php
+
+		-
+			message: '#^Method Rampart\\Php\\Checkers\\PhpstanChecker\:\:parseOutput\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Checkers/PhpstanChecker.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: src/Checkers/PhpstanChecker.php
+
+		-
+			message: '#^Method Rampart\\Php\\Checkers\\PhpunitChecker\:\:config\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Checkers/PhpunitChecker.php
+
+		-
+			message: '#^Method Rampart\\Php\\Checkers\\PhpunitChecker\:\:parseJunit\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Checkers/PhpunitChecker.php
+
+		-
+			message: '#^Method Rampart\\Php\\Checkers\\TrivyChecker\:\:config\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Checkers/TrivyChecker.php
+
+		-
+			message: '#^Method Rampart\\Php\\Checkers\\TrivyChecker\:\:makeIssue\(\) has parameter \$metadata with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Checkers/TrivyChecker.php
+
+		-
+			message: '#^Method Rampart\\Php\\Checkers\\TrivyChecker\:\:parseOutput\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Checkers/TrivyChecker.php
+
+		-
+			message: '#^Method Rampart\\Php\\Checkers\\TrivyChecker\:\:result\(\) has parameter \$issues with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Checkers/TrivyChecker.php
+
+		-
+			message: '#^Constant Rampart\\Php\\Fixer\\PhpcsFixer\:\:EXIT_FIXABLE_REMAIN is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: src/Fixer/PhpcsFixer.php
+
+		-
+			message: '#^Constant Rampart\\Php\\Fixer\\PhpcsFixer\:\:EXIT_NO_ISSUES is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: src/Fixer/PhpcsFixer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Fixer\\PhpcsFixer\:\:buildCommand\(\) has parameter \$paths with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Fixer/PhpcsFixer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Fixer\\PhpcsFixer\:\:firstExisting\(\) has parameter \$candidates with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Fixer/PhpcsFixer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Fixer\\PhpcsFixer\:\:run\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Fixer/PhpcsFixer.php
+
+		-
+			message: '#^Method Rampart\\Php\\Reporters\\ConsoleReporter\:\:buildSummary\(\) has parameter \$results with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Reporters/ConsoleReporter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Reporters\\ConsoleReporter\:\:buildSummary\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Reporters/ConsoleReporter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Reporters\\ConsoleReporter\:\:printIssues\(\) has parameter \$results with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Reporters/ConsoleReporter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Reporters\\ConsoleReporter\:\:printOwaspFindings\(\) has parameter \$results with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Reporters/ConsoleReporter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Reporters\\ConsoleReporter\:\:renderSummaryLine\(\) has parameter \$results with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Reporters/ConsoleReporter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Reporters\\JsonReporter\:\:buildCheckers\(\) has parameter \$results with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Reporters/JsonReporter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Reporters\\JsonReporter\:\:buildCheckers\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Reporters/JsonReporter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Reporters\\JsonReporter\:\:buildOwasp\(\) has parameter \$results with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Reporters/JsonReporter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Reporters\\JsonReporter\:\:buildOwasp\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Reporters/JsonReporter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Reporters\\JsonReporter\:\:buildSummary\(\) has parameter \$results with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Reporters/JsonReporter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Reporters\\JsonReporter\:\:buildSummary\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Reporters/JsonReporter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Reporters\\MarkdownReporter\:\:badgeColor\(\) has parameter \$summary with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Reporters/MarkdownReporter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Reporters\\MarkdownReporter\:\:badgeLine\(\) has parameter \$summary with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Reporters/MarkdownReporter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Reporters\\MarkdownReporter\:\:buildSummary\(\) has parameter \$results with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Reporters/MarkdownReporter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Reporters\\MarkdownReporter\:\:buildSummary\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Reporters/MarkdownReporter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Reporters\\MarkdownReporter\:\:groupByFile\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Reporters/MarkdownReporter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Reporters\\MarkdownReporter\:\:overallStatus\(\) has parameter \$results with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Reporters/MarkdownReporter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Reporters\\MarkdownReporter\:\:overallStatusForBadge\(\) has parameter \$summary with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Reporters/MarkdownReporter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Reporters\\MarkdownReporter\:\:owaspCounts\(\) has parameter \$results with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Reporters/MarkdownReporter.php
+
+		-
+			message: '#^Method Rampart\\Php\\Result\\CheckResult\:\:fromArray\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Result/CheckResult.php
+
+		-
+			message: '#^Method Rampart\\Php\\Result\\CheckResult\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Result/CheckResult.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 2
+			path: src/Result/CheckResult.php
+
+		-
+			message: '#^Method Rampart\\Php\\Result\\Issue\:\:__construct\(\) has parameter \$metadata with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Result/Issue.php
+
+		-
+			message: '#^Method Rampart\\Php\\Result\\Issue\:\:fromArray\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Result/Issue.php
+
+		-
+			message: '#^Method Rampart\\Php\\Result\\Issue\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Result/Issue.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 2
+			path: src/Result/Issue.php
+
+		-
+			message: '#^Method Rampart\\Php\\Runner\\CheckContext\:\:configFor\(\) has parameter \$default with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Runner/CheckContext.php
+
+		-
+			message: '#^Method Rampart\\Php\\Runner\\CheckContext\:\:configFor\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Runner/CheckContext.php
+
+		-
+			message: '#^Method Rampart\\Php\\Runner\\ResultCache\:\:get\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Runner/ResultCache.php
+
+		-
+			message: '#^Method Rampart\\Php\\Runner\\ResultCache\:\:key\(\) has parameter \$configHash with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Runner/ResultCache.php
+
+		-
+			message: '#^Method Rampart\\Php\\Runner\\ResultCache\:\:key\(\) has parameter \$paths with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Runner/ResultCache.php
+
+		-
+			message: '#^Method Rampart\\Php\\Runner\\ResultCache\:\:put\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Runner/ResultCache.php
+
+		-
+			message: '#^Instanceof between PhpParser\\Node\\Expr and PhpParser\\Node\\Expr will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Semantic/FormRequestIndex.php
+
+		-
+			message: '#^Instanceof between PhpParser\\Node\\Expr and PhpParser\\Node\\Expr will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Semantic/MiddlewareInspector.php
+
+		-
+			message: '#^Call to static method PHPUnit\\Framework\\Assert\:\:assertIsArray\(\) with array will always evaluate to true\.$#'
+			identifier: staticMethod.alreadyNarrowedType
+			count: 2
+			path: tests/Unit/EdgeCaseTest.php

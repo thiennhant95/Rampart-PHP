@@ -1,0 +1,414 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Rampart\Php\Standalone;
+
+use Rampart\Php\Baseline\BaselineFilter;
+use Rampart\Php\Baseline\BaselineManager;
+use Rampart\Php\Baseline\IssueDelta;
+use Rampart\Php\Profiling\Profiler;
+use Rampart\Php\Reporters\ConsoleReporter;
+use Rampart\Php\Reporters\HtmlReporter;
+use Rampart\Php\Reporters\JsonReporter;
+use Rampart\Php\Reporters\MarkdownReporter;
+use Rampart\Php\Reporters\ReporterInterface;
+use Rampart\Php\Reporters\SarifReporter;
+use Rampart\Php\Result\CheckResult;
+use Rampart\Php\Result\PackageVersion;
+use Rampart\Php\Runner\CheckContext;
+use Rampart\Php\Runner\CheckRunner;
+use Symfony\Component\Console\Output\OutputInterface;
+
+/**
+ * Standalone scan entry: same engine as `php artisan rampart:check`
+ * but runnable against any directory without installing the package
+ * into the target project (no target vendor, no artisan needed).
+ *
+ * Only checkers that work from static sources run here; anything
+ * needing the target runtime (target phpunit run) is skipped unless
+ * explicitly requested via --only.
+ */
+final class StandaloneRunner
+{
+    /** @var array<string, string> */
+    private array $options = [];
+
+    /** @var list<string> */
+    private array $paths = [];
+
+    /** @var list<string> */
+    private array $excludePaths = [];
+
+    private string $target = '';
+
+    /**
+     * @param list<string> $argv argv without the script name
+     */
+    public function __construct(array $argv)
+    {
+        $this->parseArgv($argv);
+    }
+
+    public function run(OutputInterface $output, string $toolRoot): int
+    {
+        if (isset($this->options['help']) || $this->target === '') {
+            $this->printHelp($output);
+
+            return $this->target === '' && !isset($this->options['help']) ? 2 : 0;
+        }
+        $target = $this->target;
+        if (!is_dir($target)) {
+            $output->writeln('<error>Target directory not found: ' . $target . '</error>');
+
+            return 2;
+        }
+
+        // Exit code 3 is documented as "runtime error inside the package itself".
+        // It has to be caught here rather than left to an uncaught throwable,
+        // which surfaces as exit 255 and a stack trace: a CI job cannot tell that
+        // apart from the tool crashing on the user's code.
+        try {
+            return $this->scan($output, $toolRoot);
+        } catch (\Throwable $e) {
+            $output->writeln(sprintf(
+                '<error>Internal error: %s: %s</error>',
+                $e::class,
+                $e->getMessage()
+            ));
+
+            return 3;
+        }
+    }
+
+    private function scan(OutputInterface $output, string $toolRoot): int
+    {
+        $config = $this->loadConfig($toolRoot);
+        $config = $this->mergeExcludePaths($config);
+        $config = $this->mergeGateIgnore($config);
+        $config = $this->mergeCoverageOptIn($config);
+        if (isset($this->options['framework']) && $this->options['framework'] !== '') {
+            $config['framework'] = $this->options['framework'];
+        }
+        if (isset($this->options['no-remediation'])) {
+            $config['remediation'] = false;
+        }
+        if (isset($this->options['client'])) {
+            $config['report_client'] = true;
+            $config['remediation'] = false;
+        }
+        $target = $this->target;
+        $ctx = new CheckContext(
+            $target,
+            $this->scanPaths($target),
+            $config,
+            $this->outputDir($target),
+            noAutoInstall: true,
+            failOn: $this->options['fail-on'] ?? 'error',
+            tier: $this->options['tier'] ?? ($config['tier'] ?? 'quality'),
+            minConfidence: $this->options['min-confidence'] ?? ($config['min_confidence'] ?? 'low'),
+            minSeverity: $this->options['min-severity'] ?? ($config['min_severity'] ?? 'info'),
+            packageVersion: PackageVersion::detect($toolRoot),
+        );
+        $ctx->only = $this->split($this->options['only'] ?? 'custom');
+        // The config key and the flag are the same setting, so they are merged
+        // rather than one replacing the other. Before, the config key was never
+        // read at all and `exclude` in a project's config file was silently a
+        // no-op.
+        $ctx->exclude = array_values(array_unique(array_merge(
+            $this->configuredCheckerNames($config, 'exclude'),
+            $this->split($this->options['exclude'] ?? '')
+        )));
+        $ctx->noCache = isset($this->options['no-cache']);
+        $ctx->profile = isset($this->options['profile']);
+        $ctx->exitCode = 0;
+        $ctx->baselineFile = $this->options['baseline-file'] ?? ($target . DIRECTORY_SEPARATOR . 'baseline.json');
+        $ctx->metadata = ['format' => $this->formats()];
+        if (isset($this->options['all-variants'])) {
+            $ctx->metadata['html_all_variants'] = true;
+        }
+
+        $runner = new CheckRunner($ctx);
+        $results = $runner->run($runner->buildCheckers());
+        $results = $this->applyBaseline($ctx, $results, $output);
+
+        $ctx->exitCode = $runner->shouldFail($results) ? 1 : 0;
+
+        foreach ($this->formats() as $format) {
+            $reporter = $this->reporterFor($format, $output);
+            if ($reporter !== null) {
+                $reporter->render($results, $ctx);
+            }
+        }
+        if ($ctx->profile) {
+            // The path is the CLI operator's own --output value (or the target
+            // dir plus reports/rampart), not attacker input: this is a
+            // local tool run by the person who owns the filesystem.
+            // rampart-ignore-next-line OWASP_PATH_TRAVERSAL
+            file_put_contents(
+                rtrim($ctx->outputDir, '/\\') . DIRECTORY_SEPARATOR . 'profile.json',
+                json_encode(Profiler::report(), JSON_PRETTY_PRINT)
+            );
+        }
+
+        $total = 0;
+        foreach ($results as $result) {
+            $total += count($result->issues);
+        }
+        $output->writeln(sprintf('Standalone scan: %d issue(s) in %s (exit %d).', $total, $ctx->outputDir, $ctx->exitCode));
+
+        return $ctx->exitCode;
+    }
+
+    /**
+ * Checker names from a config list, ignoring anything that is not a string.
+ *
+ * @param array<string, mixed> $config
+ * @return list<string>
+ */
+    private function configuredCheckerNames(array $config, string $key): array
+    {
+        $value = $config[$key] ?? [];
+
+        if (is_string($value)) {
+            return $this->split($value);
+        }
+
+        if (!is_array($value)) {
+            return [];
+        }
+
+        return array_values(array_filter($value, 'is_string'));
+    }
+
+    /**
+     * Merge --ignore=RULE,... into quality_gate.ignore (mirrors the Artisan
+     * entry point) so noisy rules can be skipped per run. Dropped from
+     * reports, not just the gate (see CheckRunner::withoutIgnoredRules).
+     *
+     * @param array<string, mixed> $config
+     * @return array<string, mixed>
+     */
+    private function mergeGateIgnore(array $config): array
+    {
+        $gate = $config['quality_gate'] ?? [];
+        if (!is_array($gate)) {
+            $gate = [];
+        }
+        $ignore = $gate['ignore'] ?? [];
+        if (!is_array($ignore)) {
+            $ignore = [];
+        }
+        $gate['ignore'] = array_values(array_unique(array_merge(
+            array_map('strval', $ignore),
+            $this->split($this->options['ignore'] ?? '')
+        )));
+        $config['quality_gate'] = $gate;
+
+        return $config;
+    }
+
+    /**
+     * `--coverage` opts into the test-coverage analyzers for one run, without
+     * editing any config file (standalone targets have no config of their own).
+     *
+     * @param array<string, mixed> $config
+     * @return array<string, mixed>
+     */
+    private function mergeCoverageOptIn(array $config): array
+    {
+        if (!isset($this->options['coverage'])) {
+            return $config;
+        }
+        if (!isset($config['analyzers']) || !is_array($config['analyzers'])) {
+            $config['analyzers'] = [];
+        }
+        if (!isset($config['analyzers']['test_coverage']) || !is_array($config['analyzers']['test_coverage'])) {
+            $config['analyzers']['test_coverage'] = [];
+        }
+        $config['analyzers']['test_coverage']['unified'] = true;
+
+        return $config;
+    }
+
+    /**
+     * @param list<string> $argv
+     */
+    private function parseArgv(array $argv): void
+    {
+        foreach ($argv as $arg) {
+            if (!str_starts_with($arg, '--')) {
+                if ($this->target === '') {
+                    $this->target = rtrim($arg, '/\\');
+                }
+                continue;
+            }
+            $pair = explode('=', substr($arg, 2), 2);
+            $key = $pair[0];
+            $value = $pair[1] ?? '1';
+            if ($key === 'path') {
+                $this->paths[] = $value;
+                continue;
+            }
+            if ($key === 'exclude-path') {
+                $this->excludePaths[] = $value;
+                continue;
+            }
+            $this->options[$key] = $value;
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function formats(): array
+    {
+        $raw = $this->options['format'] ?? 'console';
+        $parts = array_values(array_filter(array_map('trim', explode(',', $raw))));
+        if (in_array('all', $parts, true)) {
+            return ['console', 'json', 'html', 'md', 'sarif'];
+        }
+
+        return $parts === [] ? ['console'] : $parts;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function split(string $value): array
+    {
+        return array_values(array_filter(array_map('trim', explode(',', $value))));
+    }
+
+    /**
+     * Merge the repeated --exclude-path flags into the loaded config, so both
+     * entry points feed PathExcluder from the same place.
+     *
+     * @param array<string, mixed> $config
+     * @return array<string, mixed>
+     */
+    private function mergeExcludePaths(array $config): array
+    {
+        if ($this->excludePaths === []) {
+            return $config;
+        }
+
+        $analyzers = $config['analyzers'] ?? [];
+        $analyzers = is_array($analyzers) ? $analyzers : [];
+        $existing = $analyzers['exclude_paths'] ?? [];
+        $existing = is_array($existing) ? $existing : [];
+        $analyzers['exclude_paths'] = array_values(array_unique(array_merge(
+            array_map('strval', $existing),
+            $this->excludePaths
+        )));
+        $config['analyzers'] = $analyzers;
+
+        return $config;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function scanPaths(string $target): array
+    {
+        if ($this->paths !== []) {
+            return $this->paths;
+        }
+
+        $profile = (new \Rampart\Php\Framework\FrameworkDetector())
+            ->detect($target, $this->options['framework'] ?? null);
+
+        return $profile->existingScanPaths($target);
+    }
+
+    private function outputDir(string $target): string
+    {
+        $out = $this->options['output'] ?? 'reports/rampart';
+        if (preg_match('/^[A-Za-z]:[\\\\\\/]/', $out) === 1 || str_starts_with($out, '/')) {
+            return rtrim($out, '/\\');
+        }
+
+        return rtrim($target, '/\\') . DIRECTORY_SEPARATOR . trim($out, '/\\');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function loadConfig(string $toolRoot): array
+    {
+        $file = rtrim($toolRoot, '/\\') . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'rampart.php';
+        if (!is_file($file)) {
+            return [];
+        }
+        // $toolRoot is the installed package root (dirname(__DIR__) of the bin
+        // script), never target data.
+        // rampart-ignore-next-line OWASP_PATH_TRAVERSAL
+        $config = require $file;
+
+        return is_array($config) ? $config : [];
+    }
+
+    /**
+     * @param CheckResult[] $results
+     * @return CheckResult[]
+     */
+    private function applyBaseline(CheckContext $ctx, array $results, OutputInterface $output): array
+    {
+        $generate = isset($this->options['baseline-generate']);
+        $update = isset($this->options['baseline-update']);
+        if (!$generate && !$update && !is_file($ctx->baselineFile)) {
+            return $results;
+        }
+        $manager = new BaselineManager($ctx->baselineFile);
+        $arrays = array_map(static fn (CheckResult $r): array => $r->toArray(), $results);
+        if ($generate || $update) {
+            $manager->update($arrays, $ctx->baselineFile);
+            $output->writeln('Baseline written to ' . $ctx->baselineFile . '.');
+
+            return $results;
+        }
+        $manager->load();
+        $filter = new BaselineFilter($manager);
+        $filtered = $filter->filter($arrays);
+        $delta = IssueDelta::compute($filtered, $manager->signatures());
+        $ctx->metadata['delta'] = [
+            'new' => count($delta['new']),
+            'fixed' => $delta['fixed'],
+            'existing' => $delta['existing'],
+            'new_by_rule' => $delta['new_by_rule'],
+        ];
+
+        return array_map(static fn (array $item): CheckResult => CheckResult::fromArray($item), $filtered);
+    }
+
+    private function reporterFor(string $format, OutputInterface $output): ?ReporterInterface
+    {
+        return match ($format) {
+            'console' => new ConsoleReporter($output),
+            'json' => new JsonReporter(),
+            'html' => new HtmlReporter(),
+            'md' => new MarkdownReporter(),
+            'sarif' => new SarifReporter(),
+            default => null,
+        };
+    }
+
+    private function printHelp(OutputInterface $output): void
+    {
+        $output->writeln('Usage: php bin/rampart <target-dir> [options]');
+        $output->writeln('  --format=console|json|html|md|sarif|all (default: console)');
+        $output->writeln('  --tier=security|quality|all  --only=custom,npm_audit,...  --exclude=...');
+        $output->writeln('  --fail-on=none|info|warning|error|critical  --min-confidence=low|medium|high');
+        $output->writeln('  --min-severity=info|warning|error|critical  hide lighter findings from reports');
+        $output->writeln('  --output=<dir>  --path=<sub> (repeatable)  --no-cache  --profile');
+        $output->writeln('  --exclude-path=<glob> (repeatable, e.g. */fixtures/*)  merges with analyzers.exclude_paths');
+        $output->writeln('  --baseline-file=<file>  --baseline-generate  --baseline-update  --help');
+        $output->writeln('  --ignore=RULE,...  skip rules (e.g. ROUTE_MISSING_AUTH,DEBUG_OUTPUT)');
+        $output->writeln('  --framework=auto|plain|slim|codeigniter4|fuelphp|symfony|laravel  force a layout');
+        $output->writeln('  --coverage  opt into test-coverage checks for this run (off by default)');
+        $output->writeln('  --no-remediation  findings only in human reports (no fix guidance)');
+        $output->writeln('  --client  client-facing HTML (findings only, trimmed chrome, relative paths)');
+        $output->writeln('  --all-variants  HTML: write dev + findings-only + client reports in one run');
+        $output->writeln('Default --only=custom: static analyzers only, no target vendor needed.');
+    }
+}

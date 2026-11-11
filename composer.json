@@ -1,0 +1,47 @@
+{
+    "name": "rampart/php",
+    "description": "Standalone PHP quality gate for plain PHP and any framework (Slim, CodeIgniter 4, FuelPHP, Symfony): wraps phpcs, phpstan, phpunit, composer audit and adds custom PHP-Parser security analyzers.",
+    "keywords": ["php", "quality", "security", "static-analysis", "phpcs", "phpstan", "phpunit", "slim", "codeigniter", "fuelphp", "symfony", "ci"],
+    "license": "MIT",
+    "type": "library",
+    "homepage": "https://github.com/thiennhant95/rampart-php",
+    "bin": [
+        "bin/rampart"
+    ],
+    "require": {
+        "php": "^8.1",
+        "nikic/php-parser": "^5.0",
+        "symfony/console": "^6.0|^7.0",
+        "symfony/process": "^6.0|^7.0"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.0",
+        "phpunit/phpunit": "^10.5|^11.0",
+        "squizlabs/php_codesniffer": "^3.13"
+    },
+    "scripts": {
+        "test": "phpunit",
+        "lint": "phpcs --standard=phpcs.xml.dist src tests tools config",
+        "analyse": "phpstan analyse --memory-limit=1G --no-progress",
+        "check": [
+            "@lint",
+            "@analyse",
+            "@test"
+        ],
+        "smoke": "php tools/smoke-install.php"
+    },
+    "autoload": {
+        "psr-4": {
+            "Rampart\\Php\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Rampart\\Php\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable"
+}

@@ -1,0 +1,167 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Rampart\Php\Analyzers\Security;
+
+use PhpParser\Node;
+use Rampart\Php\Analysis\CountingNodeFinder;
+use Rampart\Php\Result\Issue;
+use Rampart\Php\Result\Severity;
+use Rampart\Php\Profiling\Profiler;
+use Rampart\Php\Scanning\ScanContextAware;
+use Rampart\Php\Scanning\ScanContextTrait;
+
+final class UnsafeDeserializationAnalyzer implements ScanContextAware
+{
+    use ScanContextTrait;
+
+    private const RULE = 'UNSAFE_UNSERIALIZE';
+
+    public function analyze(array $files): array
+    {
+        $issues = [];
+        foreach ($files as $file) {
+            if (!$this->supports($file)) {
+                continue;
+            }
+            foreach ($this->analyzeFile($file) as $issue) {
+                $issues[] = $issue;
+            }
+        }
+
+        return $issues;
+    }
+
+    public function supports(string $path): bool
+    {
+        return strtolower((string) pathinfo($path, PATHINFO_EXTENSION)) === 'php';
+    }
+
+    public function analyzeFile(string $file): array
+    {
+        $ast = $this->sharedAst($file);
+        if ($ast === null) {
+            return [];
+        }
+
+        $issues = [];
+        $finder = new CountingNodeFinder();
+
+        $calls = $finder->findInstanceOf($ast, Node\Expr\FuncCall::class);
+        foreach ($calls as $call) {
+            if (!$call->name instanceof Node\Name) {
+                continue;
+            }
+            $functionName = $call->name->toString();
+
+            if ($functionName === 'unserialize') {
+                $arg = $call->args[0] ?? null;
+                if ($arg === null) {
+                    continue;
+                }
+                if ($this->isLiteralOrConstant($arg->value)) {
+                    continue;
+                }
+                if ($this->disallowsClasses($call)) {
+                    continue;
+                }
+                $issues[] = new Issue(
+                    self::RULE,
+                    'unserialize() is called with a non-literal (potentially untrusted) argument.',
+                    $file,
+                    $call->getStartLine(),
+                    Severity::Critical,
+                    'custom',
+                    ['function' => 'unserialize']
+                );
+            }
+
+            if (in_array($functionName, ['yaml_parse', 'yaml_parse_file', 'yaml_parse_url'], true)) {
+                $arg = $call->args[0] ?? null;
+                if ($arg === null) {
+                    continue;
+                }
+                if ($arg instanceof Node\Arg && $this->isLiteralOrConstant($arg->value)) {
+                    continue;
+                }
+                $issues[] = new Issue(
+                    self::RULE,
+                    sprintf('%s() is called with a non-literal (potentially untrusted) argument; YAML tags can instantiate PHP objects.', $functionName),
+                    $file,
+                    $call->getStartLine(),
+                    Severity::Critical,
+                    'custom',
+                    ['function' => $functionName]
+                );
+            }
+
+            if ($functionName === 'ini_set' || $functionName === 'set_error_handler') {
+                $arg = $call->args[0] ?? null;
+                $arg2 = $call->args[1] ?? null;
+                $argName = $arg instanceof Node\Arg ? $this->argLiteralString($arg->value) : null;
+                if ($argName === 'unserialize_callback_func') {
+                    if ($arg2 === null || $this->isLiteralOrConstant($arg2->value)) {
+                        continue;
+                    }
+                    $issues[] = new Issue(
+                        self::RULE,
+                        'unserialize_callback_func is set to a non-literal callback, allowing arbitrary code execution on unserialize.',
+                        $file,
+                        $call->getStartLine(),
+                        Severity::Critical,
+                        'custom',
+                        ['function' => 'unserialize_callback_func']
+                    );
+                }
+            }
+        }
+
+        return $issues;
+    }
+
+    private function isLiteralOrConstant(Node\Expr $expr): bool
+    {
+        return $expr instanceof Node\Scalar
+            || $expr instanceof Node\Expr\ClassConstFetch
+            || $expr instanceof Node\Expr\ConstFetch;
+    }
+
+    /**
+     * unserialize($data, ['allowed_classes' => false]) cannot instantiate
+     * objects — the object-injection vector is closed.
+     */
+    private function disallowsClasses(Node\Expr\FuncCall $call): bool
+    {
+        $options = $call->args[1] ?? null;
+        if (!$options instanceof Node\Arg || !$options->value instanceof Node\Expr\Array_) {
+            return false;
+        }
+
+        foreach ($options->value->items as $item) {
+            if (!$item instanceof Node\Expr\ArrayItem || !$item->key instanceof Node\Scalar\String_) {
+                continue;
+            }
+            if (strtolower($item->key->value) !== 'allowed_classes') {
+                continue;
+            }
+            $value = $item->value;
+            if ($value instanceof Node\Expr\ConstFetch && $value->name instanceof Node\Name) {
+                return strtolower($value->name->toString()) === 'false';
+            }
+
+            return false;
+        }
+
+        return false;
+    }
+
+    private function argLiteralString(Node\Expr $expr): ?string
+    {
+        if ($expr instanceof Node\Scalar\String_) {
+            return $expr->value;
+        }
+
+        return null;
+    }
+}

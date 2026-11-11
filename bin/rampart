@@ -1,0 +1,54 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// Standalone scan: no composer install in the target project needed.
+// Usage: php bin/rampart <target-dir> [--format=all] [options]
+
+/**
+ * Locate the Composer autoloader.
+ *
+ * The tool runs from two layouts:
+ *  - a clone of this repository: `<root>/vendor/autoload.php`
+ *  - installed as a dependency: `<project>/vendor/autoload.php`
+ *
+ * @return string|null
+ */
+$locateAutoloader = static function (): ?string {
+    $candidates = [];
+    $directory = __DIR__;
+    for ($depth = 0; $depth < 6; $depth++) {
+        $candidates[] = $directory . '/vendor/autoload.php';
+        $candidates[] = $directory . '/autoload.php';
+        $parent = dirname($directory);
+        if ($parent === $directory) {
+            break;
+        }
+        $directory = $parent;
+    }
+
+    foreach ($candidates as $candidate) {
+        if (is_file($candidate)) {
+            return $candidate;
+        }
+    }
+
+    return null;
+};
+
+$autoload = $locateAutoloader();
+if ($autoload === null) {
+    fwrite(STDERR, "Could not locate a Composer autoloader. Run 'composer install' first.\n");
+    exit(2);
+}
+require $autoload;
+
+use Rampart\Php\Standalone\StandaloneRunner;
+use Symfony\Component\Console\Output\StreamOutput;
+
+$argv = $_SERVER['argv'] ?? [];
+array_shift($argv);
+
+$output = new StreamOutput(fopen('php://stdout', 'w'));
+exit((new StandaloneRunner($argv))->run($output, dirname(__DIR__)));
