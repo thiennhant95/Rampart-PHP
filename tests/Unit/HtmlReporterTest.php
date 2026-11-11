@@ -1,0 +1,507 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Rampart\Php\Tests\Unit;
+
+use PHPUnit\Framework\TestCase;
+use Rampart\Php\Reporters\HtmlReporter;
+use Rampart\Php\Result\CheckResult;
+use Rampart\Php\Result\Confidence;
+use Rampart\Php\Result\Issue;
+use Rampart\Php\Result\Severity;
+use Rampart\Php\Runner\CheckContext;
+
+final class HtmlReporterTest extends TestCase
+{
+    private string $tempDir = '';
+
+    private string $baseDir = '';
+
+    protected function tearDown(): void
+    {
+        foreach ([$this->tempDir, $this->baseDir] as $dir) {
+            if ($dir !== '' && is_dir($dir)) {
+                $this->removeDir($dir);
+            }
+        }
+        $this->tempDir = '';
+        $this->baseDir = '';
+    }
+
+    private function removeDir(string $dir): void
+    {
+        $items = scandir($dir) ?: [];
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($path)) {
+                $this->removeDir($path);
+            } else {
+                @unlink($path);
+            }
+        }
+        @rmdir($dir);
+    }
+
+    /**
+     * @param array<string, mixed> $configOverrides
+     * @param array<string, mixed> $metadata
+     */
+    private function renderHtml(array $configOverrides = [], array $metadata = []): string
+    {
+        $this->tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'qc-html-' . uniqid('', true);
+        @mkdir($this->tempDir, 0777, true);
+        $this->baseDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'qc-base-' . uniqid('', true);
+
+        // Real source file so code snippets can be read from disk.
+        $srcDir = $this->baseDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Http' . DIRECTORY_SEPARATOR . 'Controllers';
+        @mkdir($srcDir, 0777, true);
+        $srcLines = [
+            '<?php',
+            '',
+            'class UserController',
+            '{',
+            '    public function index()',
+            '    {',
+            '        $rows = DB::select("select * from users where q = " . $request->q);',
+            '        return $rows;',
+            '    }',
+            '}',
+        ];
+        file_put_contents($srcDir . DIRECTORY_SEPARATOR . 'UserController.php', implode("\n", $srcLines));
+
+        $results = [
+            new CheckResult('custom', 'failed', 0.5, [
+                new Issue(
+                    'SQL_INJECTION',
+                    'Tainted input flows into select().',
+                    'app/Http/Controllers/UserController.php',
+                    7,
+                    Severity::Critical,
+                    'custom',
+                    [],
+                    Confidence::High
+                ),
+                new Issue(
+                    'TODO_FIXME',
+                    'Leftover TODO marker.',
+                    'app/Services/OrderService.php',
+                    3,
+                    Severity::Info,
+                    'custom',
+                    [],
+                    Confidence::Low
+                ),
+                new Issue(
+                    'OWASP_SSRF',
+                    'URL from user input into file_get_contents.',
+                    'app/Http/Controllers/UserController.php',
+                    7,
+                    Severity::Error,
+                    'custom',
+                    [],
+                    Confidence::High
+                ),
+            ], null, '3 issues'),
+            new CheckResult('phpcs', 'passed', 1.2, [], null, null),
+        ];
+
+        $config = array_replace_recursive(
+            ['html' => ['repo_url' => null, 'branch' => 'main', 'code_context' => 3]],
+            $configOverrides
+        );
+
+        $ctx = new CheckContext(
+            $this->baseDir,
+            ['app'],
+            $config,
+            $this->tempDir,
+            packageVersion: '1.0.0'
+        );
+
+        $ctx->metadata = $metadata;
+
+        (new HtmlReporter())->render($results, $ctx);
+
+        $filename = !empty($config['report_client']) ? 'rampart-report-client.html' : 'rampart-report.html';
+        $file = $this->tempDir . DIRECTORY_SEPARATOR . $filename;
+        self::assertFileExists($file);
+
+        return (string) file_get_contents($file);
+    }
+
+    public function testHowToReadFixNowAndAppendixSectionsExist(): void
+    {
+        $html = $this->renderHtml();
+
+        self::assertStringContainsString('id="how-to-read"', $html);
+        self::assertStringContainsString('Fix now', $html);
+        self::assertStringContainsString('id="fix-now"', $html);
+        self::assertStringContainsString('id="appendix"', $html);
+        self::assertStringContainsString('Glossary', $html);
+    }
+
+    public function testFixNowListsOnlyP0(): void
+    {
+        $html = $this->renderHtml();
+        $start = strpos($html, 'id="fix-now"');
+        self::assertIsInt($start);
+        $end = strpos($html, 'id="quality-score"', $start);
+        self::assertIsInt($end);
+        $section = substr($html, $start, $end - $start);
+
+        self::assertStringContainsString('SQL_INJECTION', $section);
+        self::assertStringContainsString('OWASP_SSRF', $section);
+        self::assertStringNotContainsString('TODO_FIXME', $section);
+    }
+
+    public function testRemediationHiddenWhenDisabled(): void
+    {
+        $html = $this->renderHtml(['remediation' => false]);
+
+        self::assertStringNotContainsString('class="fixbox"', $html);
+        self::assertStringContainsString('Findings-only mode', $html);
+        self::assertFileExists($this->tempDir . DIRECTORY_SEPARATOR . 'rampart-report-findings.html');
+    }
+
+    public function testRemediationShownByDefault(): void
+    {
+        $html = $this->renderHtml();
+
+        self::assertStringContainsString('class="fixbox"', $html);
+    }
+
+    public function testSummaryStaysSlim(): void
+    {
+        $html = $this->renderHtml();
+        $start = strpos($html, 'id="summary"');
+        self::assertIsInt($start);
+        $end = strpos($html, 'id="action-plan"', $start);
+        self::assertIsInt($end);
+        $section = substr($html, $start, $end - $start);
+
+        foreach (['Total Issues', 'Critical', 'Error', 'Warning', 'Info', 'Severity distribution'] as $kept) {
+            self::assertStringContainsString($kept, $section);
+        }
+        foreach (['>Checkers<', '>Passed<', '>Failed<', '>P0<', '>P1<', '<h3>Top rules</h3>'] as $dropped) {
+            self::assertStringNotContainsString($dropped, $section);
+        }
+    }
+
+    public function testRiskTableShowsPrioritySplitBehindAction(): void
+    {
+        $html = $this->renderHtml();
+        $start = strpos($html, 'id="risk-overview"');
+        self::assertIsInt($start);
+        $section = substr($html, $start, 2500);
+
+        foreach (['<th', 'P0', 'P1', 'P2', 'P3', 'Action'] as $needle) {
+            self::assertStringContainsString($needle, $section);
+        }
+    }
+
+    public function testReportContainsSidebarToc(): void
+    {
+        $html = $this->renderHtml();
+
+        self::assertStringContainsString('id="sidebar"', $html);
+        self::assertStringContainsString('href="#summary"', $html);
+        self::assertStringContainsString('href="#top-rules"', $html);
+        self::assertStringContainsString('href="#owasp"', $html);
+        self::assertStringContainsString('href="#checkers"', $html);
+        self::assertStringContainsString('href="#checker-custom"', $html);
+        self::assertStringContainsString('href="#checker-phpcs"', $html);
+    }
+
+    public function testSidebarHasInteractiveSeverityRuleAndFileFilters(): void
+    {
+        $html = $this->renderHtml();
+
+        self::assertStringContainsString('data-side-sev="critical"', $html);
+        self::assertStringContainsString('data-side-sev="info"', $html);
+        self::assertStringContainsString('data-side-rule="sql_injection"', $html);
+        self::assertStringContainsString('data-side-file="app/http/controllers/usercontroller.php"', $html);
+        self::assertStringContainsString('Hot Files', $html);
+        self::assertStringContainsString('Top Rules', $html);
+        self::assertStringContainsString('[data-side-sev]', $html);
+        self::assertStringContainsString('[data-side-rule]', $html);
+        self::assertStringContainsString('[data-side-file]', $html);
+    }
+
+    public function testReportContainsOnPageSearchAndSeverityFilters(): void
+    {
+        $html = $this->renderHtml();
+
+        self::assertStringContainsString('id="report-search"', $html);
+        self::assertStringContainsString('id="match-count"', $html);
+        self::assertStringContainsString('data-sev="critical"', $html);
+        self::assertStringContainsString('data-sev="error"', $html);
+        self::assertStringContainsString('data-sev="warning"', $html);
+        self::assertStringContainsString('data-sev="info"', $html);
+    }
+
+    public function testIssueRowsCarrySearchableDataAttributes(): void
+    {
+        $html = $this->renderHtml();
+
+        self::assertStringContainsString('data-severity="critical"', $html);
+        self::assertStringContainsString('data-severity="info"', $html);
+        self::assertStringContainsString('data-search="sql_injection', $html);
+        self::assertStringContainsString('id="checker-custom"', $html);
+    }
+
+    public function testReportStaysSelfContained(): void
+    {
+        $html = $this->renderHtml();
+
+        self::assertStringContainsString('Laravel Quality Report', $html);
+        self::assertStringContainsString('<style>', $html);
+        self::assertStringContainsString('<script>', $html);
+        self::assertStringNotContainsString('src="http', $html);
+        self::assertStringNotContainsString('href="http', $html);
+        self::assertStringNotContainsString('@import', $html);
+    }
+
+    public function testSidebarFilterLinksNeverTriggerSectionReveal(): void
+    {
+        $html = $this->renderHtml();
+
+        // Filter links (severity/rule/file, incl. nested sub-menus) must not
+        // also match the revealSection() binding, or a click would filter and
+        // immediately un-filter. Only pure checker links reveal sections.
+        self::assertStringContainsString(
+            'a[href^="#checker-"]:not([data-side-sev]):not([data-side-rule]):not([data-side-file])',
+            $html
+        );
+    }
+
+    public function testIssueGroupsAreCollapsibleDetails(): void
+    {
+        $html = $this->renderHtml();
+
+        self::assertStringContainsString('<details class="issue-group"', $html);
+        // Issues are grouped by rule (compact), each row keeps a file link.
+        self::assertStringContainsString('data-rule="SQL_INJECTION"', $html);
+        self::assertStringContainsString('data-rule="TODO_FIXME"', $html);
+        self::assertStringContainsString('class="rule-name"', $html);
+        self::assertStringContainsString('id="expand-all"', $html);
+        self::assertStringContainsString('id="collapse-all"', $html);
+        self::assertStringContainsString('details.issue-group', $html);
+        // Deep-linking to a checker section reveals its collapsed groups.
+        self::assertStringContainsString('function revealSection', $html);
+        self::assertStringContainsString("'hashchange'", $html);
+    }
+
+    public function testSidebarHasNestedRuleSubMenuPerChecker(): void
+    {
+        $html = $this->renderHtml();
+
+        self::assertStringContainsString('<ul class="sub">', $html);
+        self::assertStringContainsString('data-side-rule="sql_injection"', $html);
+        self::assertStringContainsString('data-side-rule="todo_fixme"', $html);
+        // Sub-menu entries jump to their checker section.
+        self::assertStringContainsString('href="#checker-custom" data-side-rule="sql_injection"', $html);
+    }
+
+    public function testFileLinksDefaultToVscodeDeepLinks(): void
+    {
+        $html = $this->renderHtml();
+
+        self::assertStringContainsString('href="vscode://file/', $html);
+        self::assertStringContainsString('UserController.php:7', $html);
+        self::assertStringNotContainsString('href="https://', $html);
+    }
+
+    public function testFileLinksUseGitHubBlobWhenRepoUrlConfigured(): void
+    {
+        $html = $this->renderHtml([
+            'html' => ['repo_url' => 'https://github.com/org/repo', 'branch' => 'develop'],
+        ]);
+
+        self::assertStringContainsString(
+            'href="https://github.com/org/repo/blob/develop/app/Http/Controllers/UserController.php#L7"',
+            $html
+        );
+    }
+
+    public function testCodeSnippetsRenderWithContextLines(): void
+    {
+        $html = $this->renderHtml();
+
+        self::assertStringContainsString('class="snippet-row"', $html);
+        self::assertStringContainsString('<pre class="code">', $html);
+        self::assertStringContainsString('class="row cur"', $html);
+        self::assertStringContainsString('DB::select', $html);
+        self::assertStringContainsString('.snip-btn', $html);
+        // 3 lines of context around line 7: lines 4..10 (numbers are padded).
+        self::assertStringContainsString('<span class="cl"> 4</span>', $html);
+        self::assertStringContainsString('<span class="cl">10</span>', $html);
+    }
+
+    public function testSnippetsCanBeDisabledViaConfig(): void
+    {
+        $html = $this->renderHtml(['html' => ['code_context' => 0]]);
+
+        self::assertStringNotContainsString('class="snippet-row"', $html);
+        // Remediation fix samples are generic guidance, not project code:
+        // they stay visible even when snippets are off.
+        self::assertStringContainsString('class="fixbox"', $html);
+    }
+
+    public function testSortableTableHooksExist(): void
+    {
+        $html = $this->renderHtml();
+
+        self::assertStringContainsString('th[data-sortable]', $html);
+        self::assertStringContainsString('data-type="num"', $html);
+        self::assertStringContainsString('data-type="sev"', $html);
+        self::assertStringContainsString('function sortTable', $html);
+    }
+
+    public function testChartsAndThemeTogglePresent(): void
+    {
+        $html = $this->renderHtml();
+
+        self::assertStringContainsString('class="stacked"', $html);
+        self::assertStringContainsString('Severity distribution', $html);
+        self::assertStringNotContainsString(
+            'class="bars"',
+            $html,
+            'Top-rules bars were merged into the Top Rules table to de-duplicate the Summary.'
+        );
+        self::assertStringContainsString('id="theme-toggle"', $html);
+        self::assertStringContainsString("localStorage.getItem('qc-theme')", $html);
+        self::assertStringContainsString('@media print', $html);
+    }
+
+    public function testOwaspRulesCarrySeverityBreakdownForChips(): void
+    {
+        $html = $this->renderHtml();
+
+        // Fixture: OWASP_SSRF is a single Error — chips must be able to hide
+        // this block when only Critical is active, and recount its pill.
+        self::assertStringContainsString('data-crit="0"', $html);
+        self::assertStringContainsString('data-err="1"', $html);
+        self::assertStringContainsString('owasp-count', $html);
+    }
+
+    public function testOwaspSectionIsCollapsibleDrillDown(): void
+    {
+        $html = $this->renderHtml();
+
+        self::assertStringContainsString('<details class="owasp-rule"', $html);
+        self::assertStringContainsString('data-q="owasp_ssrf"', $html);
+        self::assertStringContainsString('UserController.php:7', $html);
+    }
+
+    public function testQualityScoreSectionPresent(): void
+    {
+        $html = $this->renderHtml();
+
+        // Fixture: 1 Critical/High (SQLI) + 1 Error/High (SSRF) + 1 Info/Low.
+        // Must-fix = 2 -> gate BLOCKED; Security dimension below 100.
+        self::assertStringContainsString('id="quality-score"', $html);
+        self::assertStringContainsString('Release Gate: BLOCKED', $html);
+        self::assertStringContainsString('Must Fix', $html);
+        self::assertStringContainsString('href="#quality-score"', $html);
+    }
+
+    public function testConfidenceScoresShownPerIssue(): void
+    {
+        $html = $this->renderHtml();
+
+        self::assertStringContainsString('(1.0)', $html);
+        self::assertStringContainsString('(0.25)', $html);
+    }
+
+    public function testDeltaCardRendersFromMetadata(): void
+    {
+        $this->tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'qc-html-delta-' . uniqid('', true);
+        @mkdir($this->tempDir, 0777, true);
+
+        $results = [
+            new CheckResult('custom', 'failed', 0.1, [], null, null),
+        ];
+        $ctx = new CheckContext(
+            sys_get_temp_dir(),
+            ['app'],
+            [],
+            $this->tempDir,
+            packageVersion: '1.0.0'
+        );
+        $ctx->metadata['delta'] = [
+            'new' => 2,
+            'fixed' => 7,
+            'existing' => 481,
+            'new_by_rule' => ['OWASP_SSRF' => 2],
+        ];
+
+        (new HtmlReporter())->render($results, $ctx);
+        $html = (string) file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . 'rampart-report.html');
+
+        self::assertStringContainsString('id="delta"', $html);
+        self::assertStringContainsString('href="#delta"', $html);
+    }
+
+    public function testClientReportTrimsChromeAndUsesRelativePaths(): void
+    {
+        $html = $this->renderHtml(['report_client' => true, 'remediation' => false]);
+
+        self::assertStringContainsString('RAMPART', $html);
+        self::assertStringContainsString('Project:', $html);
+        self::assertStringNotContainsString('Package:', $html);
+        self::assertStringNotContainsString('<span>Exit code:', $html);
+        self::assertStringNotContainsString('id="checkers"', $html);
+        self::assertStringNotContainsString('href="#checkers"', $html);
+        self::assertStringNotContainsString('class="fixbox"', $html);
+        self::assertStringNotContainsString('vscode://file/', $html);
+        self::assertStringNotContainsString(str_replace('\\', '/', $this->baseDir), $html);
+        self::assertStringContainsString('app/Http/Controllers/UserController.php', $html);
+        // Client audience keeps the decision sections, drops engineering detail.
+        self::assertStringContainsString('id="quality-score"', $html);
+        self::assertStringContainsString('id="action-plan"', $html);
+        self::assertStringContainsString('id="owasp"', $html);
+        self::assertStringNotContainsString('id="risk-overview"', $html);
+        self::assertStringNotContainsString('id="delta"', $html);
+        self::assertStringNotContainsString('id="top-rules"', $html);
+        self::assertStringNotContainsString('id="appendix"', $html);
+        self::assertStringNotContainsString('href="#risk-overview"', $html);
+        self::assertStringNotContainsString('href="#appendix"', $html);
+    }
+
+    public function testClientReportBrandingIsConfigurable(): void
+    {
+        $html = $this->renderHtml([
+            'report_client' => true,
+            'remediation' => false,
+            'html' => ['client_brand' => 'Acme Security', 'client_project' => 'Portal'],
+        ]);
+
+        self::assertStringContainsString('Acme Security', $html);
+        self::assertStringContainsString('Project: Portal', $html);
+        self::assertStringNotContainsString('RAMPART', $html);
+    }
+
+    public function testAllVariantsWritesDevFindingsAndClient(): void
+    {
+        $dev = $this->renderHtml([], ['html_all_variants' => true]);
+
+        $findingsFile = $this->tempDir . DIRECTORY_SEPARATOR . 'rampart-report-findings.html';
+        $clientFile = $this->tempDir . DIRECTORY_SEPARATOR . 'rampart-report-client.html';
+        self::assertFileExists($findingsFile);
+        self::assertFileExists($clientFile);
+
+        $findings = (string) file_get_contents($findingsFile);
+        $client = (string) file_get_contents($clientFile);
+
+        self::assertStringContainsString('class="fixbox"', $dev);
+        self::assertStringNotContainsString('class="fixbox"', $findings);
+        self::assertStringContainsString('id="checkers"', $findings);
+        self::assertStringNotContainsString('id="checkers"', $client);
+        self::assertStringNotContainsString('class="fixbox"', $client);
+        self::assertStringContainsString('RAMPART', $client);
+    }
+}

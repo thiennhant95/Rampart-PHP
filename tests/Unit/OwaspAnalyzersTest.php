@@ -1,0 +1,1680 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Rampart\Php\Tests\Unit;
+
+use PHPUnit\Framework\TestCase;
+use Rampart\Php\Analyzers\Owasp\OwaspAccessControlAnalyzer;
+use Rampart\Php\Analyzers\Owasp\OwaspCommandInjectionAnalyzer;
+use Rampart\Php\Analyzers\Owasp\OwaspMisconfigurationAnalyzer;
+use Rampart\Php\Analyzers\Owasp\OwaspSsrfAnalyzer;
+use Rampart\Php\Analyzers\Owasp\OwaspSstiAnalyzer;
+use Rampart\Php\Analyzers\Owasp\OwaspXxeAnalyzer;
+use Rampart\Php\Result\Issue;
+use Rampart\Php\Result\Severity;
+
+final class OwaspAnalyzersTest extends TestCase
+{
+    private function temp(string $content, string $relPath): string
+    {
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'qc-owasp-' . uniqid('', true);
+        $path = $dir . DIRECTORY_SEPARATOR . $relPath;
+        @mkdir(dirname($path), 0777, true);
+        file_put_contents($path, $content);
+
+        return $path;
+    }
+
+    /**
+     * @param list<Issue> $issues
+     * @return list<string>
+     */
+    private function rules(array $issues): array
+    {
+        return array_map(static fn ($i) => $i->rule, $issues);
+    }
+
+    public function testAccessControlFlagsUnprotectedMutatingController(): void
+    {
+        $file = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse Illuminate\\Http\\Request;\n" .
+            "class UserController extends Controller {\n    public function store(Request \$request) {\n        \$this->user()->save();\n    }\n}\n",
+            'app/Http/Controllers/UserController.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_BROKEN_ACCESS_CONTROL', $this->rules($issues)[0] ?? null);
+        self::assertSame(Severity::Error, $issues[0]->severity ?? null);
+    }
+
+    public function testAccessControlSkipsAbstractBaseClass(): void
+    {
+        $file = $this->temp(
+            "<?php\nabstract class BaseController extends Controller {\n    public function store() {\n        \$this->model->save();\n    }\n}\n",
+            'app/Http/Controllers/BaseController.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testAccessControlSkipsNonControllerClass(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass BaseRepository {\n    public function store() {\n        \$this->model->save();\n    }\n}\n",
+            'app/Repositories/BaseRepository.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testAccessControlSkipsFormShowMethods(): void
+    {
+        $file = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\nclass FormController extends Controller {\n    public function create() {\n        return view('orders.create');\n    }\n    public function edit(\$id) {\n        return view('orders.edit');\n    }\n}\n",
+            'app/Http/Controllers/FormController.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testAccessControlSkipsAuthorizedMutatingMethod(): void
+    {
+        $file = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse Illuminate\\Http\\Request;\n" .
+            "class PostController extends Controller {\n    public function store(Request \$request) {\n        \$this->authorize('create', \$request->user());\n        \$post->save();\n    }\n}\n",
+            'app/Http/Controllers/PostController.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSsrfFlagsDynamicUrlInFileGetContents(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$data = file_get_contents(\$request->input('url'));\n",
+            'app/Services/ExternalService.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_SSRF', $this->rules($issues)[0] ?? null);
+        self::assertSame(Severity::Error, $issues[0]->severity ?? null);
+    }
+
+    public function testSsrfSkipsLiteralUrl(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$data = file_get_contents('https://fixed.example/x');\n",
+            'app/Services/ExternalService.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSsrfFlagsDynamicGuzzleClientCall(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$response = \$client->get(\$request->input('target'));\n",
+            'app/Services/ExternalService.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertContains('OWASP_SSRF', $this->rules($issues));
+    }
+
+    public function testSstiFlagsDynamicViewTemplate(): void
+    {
+        $file = $this->temp(
+            "<?php\nreturn view(\$template);\n",
+            'app/Http/Controllers/PageController.php'
+        );
+
+        $issues = (new OwaspSstiAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_SSTI', $this->rules($issues)[0] ?? null);
+        self::assertSame(Severity::Error, $issues[0]->severity ?? null);
+    }
+
+    public function testSstiSkipsLiteralViewTemplate(): void
+    {
+        $file = $this->temp(
+            "<?php\nreturn view('emails.welcome');\n",
+            'app/Http/Controllers/PageController.php'
+        );
+
+        $issues = (new OwaspSstiAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSstiSkipsLiteralAssignedVariable(): void
+    {
+        $file = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\nclass ExerciseController extends Controller {\n" .
+            "    public function edit() {\n        \$viewName = 'backend.exercise.edit_catalog';\n        return view(\$viewName);\n    }\n}\n",
+            'app/Http/Controllers/ExerciseController.php'
+        );
+
+        $issues = (new OwaspSstiAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSstiStillFlagsInputAssignedVariable(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$viewName = \$request->input('template');\nreturn view(\$viewName);\n",
+            'app/Http/Controllers/PageController.php'
+        );
+
+        $issues = (new OwaspSstiAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_SSTI', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testSstiSkipsConcatOfLiterals(): void
+    {
+        $file = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\nclass PosController extends Controller {\n" .
+            "    public function index() {\n        \$industry = 2;\n        \$viewName = 'front.pos.pos_type_' . \$industry . '.pos_new';\n        return view(\$viewName);\n    }\n}\n",
+            'app/Http/Controllers/PosController.php'
+        );
+
+        $issues = (new OwaspSstiAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSstiSkipsClassConstArrayConcat(): void
+    {
+        $file = $this->temp(
+            "<?php\nuse Filament\\Support\\Facades\\Blade;\nclass OrderItemsTable {\n" .
+            "    public static function cols(): array {\n" .
+            "        return [Blade::render('<x-filament::icon style=\"color:rgb(' . \\App\\Color::Gray[400] . ');\"/>')];\n" .
+            "    }\n}\n",
+            'app/Filament/OrderItemsTable.php'
+        );
+
+        $issues = (new OwaspSstiAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSstiSkipsViewRegistryProperty(): void
+    {
+        $file = $this->temp(
+            "<?php\nnamespace App;\nclass Report {\n    protected \$views = ['show' => 'reports.show'];\n" .
+            "    public function show() {\n        return view(\$this->views['show']);\n    }\n}\n",
+            'app/Abstracts/Report.php'
+        );
+
+        $issues = (new OwaspSstiAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSstiSkipsProtectedHelperWithLiteralCallSites(): void
+    {
+        $file = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\nclass CustomerController extends Controller {\n" .
+            "    public function index() {\n        return \$this->viewCustomer('customer.index', []);\n    }\n" .
+            "    protected function viewCustomer(string \$view, array \$data = []) {\n        return view(\$view, \$data);\n    }\n}\n",
+            'app/Http/Controllers/CustomerController.php'
+        );
+
+        $issues = (new OwaspSstiAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSstiStillFlagsProtectedHelperWithInputCallSite(): void
+    {
+        $file = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\nclass CustomerController extends Controller {\n" .
+            "    public function index() {\n        return \$this->viewCustomer(\$request->input('tpl'), []);\n    }\n" .
+            "    protected function viewCustomer(string \$view, array \$data = []) {\n        return view(\$view, \$data);\n    }\n}\n",
+            'app/Http/Controllers/CustomerController.php'
+        );
+
+        $issues = (new OwaspSstiAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_SSTI', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testSstiStillFlagsPublicHelperWithLiteralCallSites(): void
+    {
+        $file = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\nclass CustomerController extends Controller {\n" .
+            "    public function index() {\n        return \$this->viewCustomer('customer.index', []);\n    }\n" .
+            "    public function viewCustomer(string \$view, array \$data = []) {\n        return view(\$view, \$data);\n    }\n}\n",
+            'app/Http/Controllers/CustomerController.php'
+        );
+
+        $issues = (new OwaspSstiAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_SSTI', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testMisconfigFlagsDebugEnabledInConfigApp(): void
+    {
+        $file = $this->temp(
+            "<?php\nreturn [\n    'debug' => true,\n    'env' => 'production',\n];\n",
+            'config/app.php'
+        );
+
+        $issues = (new OwaspMisconfigurationAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_MISCONFIGURATION', $this->rules($issues)[0] ?? null);
+        self::assertSame(Severity::Warning, $issues[0]->severity ?? null);
+        self::assertSame('debug', $issues[0]->metadata['kind'] ?? null);
+    }
+
+    public function testMisconfigFlagsCorsWildcardInConfigCors(): void
+    {
+        $file = $this->temp(
+            "<?php\nreturn [\n    'allowed_origins' => ['*'],\n];\n",
+            'config/cors.php'
+        );
+
+        $issues = (new OwaspMisconfigurationAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_MISCONFIGURATION', $this->rules($issues)[0] ?? null);
+        self::assertSame('cors', $issues[0]->metadata['kind'] ?? null);
+    }
+
+    public function testMisconfigSkipsSeederPasswordOutsideConfig(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass DemoSeeder {\n    public function run() {\n        return ['password' => ''];\n    }\n}\n",
+            'database/seeders/DemoSeeder.php'
+        );
+
+        $issues = (new OwaspMisconfigurationAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testMisconfigSkipsDebugLookalikeOutsideConfig(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass Demo {\n    public function run() {\n        return ['debug' => true];\n    }\n}\n",
+            'app/Console/Demo.php'
+        );
+
+        $issues = (new OwaspMisconfigurationAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testMisconfigFlagsInsecureCookieFlags(): void
+    {
+        $file = $this->temp(
+            "<?php\nreturn [\n    'secure' => false,\n    'http_only' => false,\n    'same_site' => 'none',\n];\n",
+            'config/session.php'
+        );
+
+        $issues = (new OwaspMisconfigurationAnalyzer())->analyze([$file]);
+
+        self::assertCount(3, $issues);
+        foreach ($issues as $issue) {
+            self::assertSame('OWASP_MISCONFIGURATION', $issue->rule);
+            self::assertSame('cookie', $issue->metadata['kind'] ?? null);
+        }
+    }
+
+    public function testMisconfigFlagsSessionSecureCookieEnv(): void
+    {
+        $file = $this->temp(
+            "SESSION_SECURE_COOKIE=false\n",
+            '.env'
+        );
+
+        $issues = (new OwaspMisconfigurationAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_MISCONFIGURATION', $this->rules($issues)[0] ?? null);
+        self::assertSame('cookie', $issues[0]->metadata['kind'] ?? null);
+    }
+
+    public function testMisconfigSkipsSecureCookieFlags(): void
+    {
+        $file = $this->temp(
+            "<?php\nreturn [\n    'secure' => true,\n    'http_only' => true,\n    'same_site' => 'lax',\n];\n",
+            'config/session.php'
+        );
+
+        $issues = (new OwaspMisconfigurationAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testMisconfigSkipsCommentedLines(): void
+    {
+        $env = $this->temp(
+            "# APP_DEBUG=true\n# SESSION_SECURE_COOKIE=false\n# change the changeme default\nAPP_DEBUG=false\n",
+            '.env'
+        );
+        self::assertSame([], (new OwaspMisconfigurationAnalyzer())->analyze([$env]));
+
+        $config = $this->temp(
+            "<?php\nreturn [\n    // 'debug' => true,\n    /* 'allowed_origins' => ['*'], */\n    'debug' => false,\n];\n",
+            'config/app.php'
+        );
+        self::assertSame([], (new OwaspMisconfigurationAnalyzer())->analyze([$config]));
+    }
+
+    public function testMisconfigStillFlagsRealLineBesideComments(): void
+    {
+        $file = $this->temp(
+            "# APP_DEBUG=false\nAPP_DEBUG=true\n",
+            '.env'
+        );
+        $issues = (new OwaspMisconfigurationAnalyzer())->analyze([$file]);
+        self::assertCount(1, $issues);
+        self::assertSame('debug', $issues[0]->metadata['kind'] ?? null);
+    }
+
+    public function testCommandInjectionFlagsTaintedSystemCall(): void
+    {
+        $file = $this->temp(
+            "<?php\nsystem(\$request->input('cmd'));\n",
+            'app/Console/Commands/RunCommand.php'
+        );
+
+        $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
+        self::assertSame('OWASP_COMMAND_INJECTION', $this->rules($issues)[0] ?? null);
+        self::assertSame(Severity::Critical, $issues[0]->severity ?? null);
+    }
+
+    public function testCommandInjectionFlagsTaintedSymfonyProcess(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$process = new Symfony\\Component\\Process\\Process(\$request->input('cmd'));\n",
+            'app/Console/Commands/RunCommand.php'
+        );
+
+        $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_COMMAND_INJECTION', $this->rules($issues)[0] ?? null);
+        self::assertSame(Severity::Critical, $issues[0]->severity ?? null);
+    }
+
+    public function testCommandInjectionSkipsLiteralCommand(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$out = shell_exec('ls -la');\n",
+            'app/Console/Commands/RunCommand.php'
+        );
+
+        $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testCommandInjectionFlagsMailFifthArg(): void
+    {
+        $file = $this->temp(
+            "<?php\nmail(\$to, \$subject, \$message, \$headers, \$extra);\n",
+            'app/Services/MailService.php'
+        );
+
+        $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_COMMAND_INJECTION', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testCommandInjectionSkipsMailWithoutFifthArg(): void
+    {
+        $file = $this->temp(
+            "<?php\nmail(\$to, \$subject, \$message, \$headers);\n",
+            'app/Services/MailService.php'
+        );
+
+        $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testXxeFlagsUnprotectedXmlSink(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$xml = simplexml_load_string(\$raw);\n",
+            'app/Services/XmlParser.php'
+        );
+
+        $issues = (new OwaspXxeAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_XXE', $this->rules($issues)[0] ?? null);
+        self::assertSame(Severity::Error, $issues[0]->severity ?? null);
+    }
+
+    public function testXxeSkipsSinkGuardedByEntityLoader(): void
+    {
+        $file = $this->temp(
+            "<?php\nlibxml_disable_entity_loader(true);\n\$xml = simplexml_load_string(\$raw);\n",
+            'app/Services/XmlParser.php'
+        );
+
+        $issues = (new OwaspXxeAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testXxeSkipsSinkGuardedByLibxmlNonet(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$doc = new DOMDocument();\n\$doc->loadXML(\$raw, LIBXML_NONET);\n",
+            'app/Services/XmlParser.php'
+        );
+
+        $issues = (new OwaspXxeAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testXxeFlagsXmlReaderOpen(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$xml = XMLReader::open(\$uri);\n",
+            'app/Services/FeedParser.php'
+        );
+
+        $issues = (new OwaspXxeAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_XXE', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testXxeFlagsReaderOpenMethod(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$reader = new XMLReader();\n\$reader->open(\$path);\n",
+            'app/Services/FeedParser.php'
+        );
+
+        $issues = (new OwaspXxeAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_XXE', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testXxeStillFlagsNoentOption(): void
+    {
+        // LIBXML_NOENT substitutes entities — it enables XXE, so it must
+        // not count as protection the way LIBXML_NONET does.
+        $file = $this->temp(
+            "<?php\n\$xml = simplexml_load_string(\$raw, 'SimpleXMLElement', LIBXML_NOENT);\n",
+            'app/Services/FeedParser.php'
+        );
+
+        $issues = (new OwaspXxeAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_XXE', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testAccessControlSkipsRouteMiddlewareProtectedAction(): void
+    {
+        $controller = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\n" .
+            "class BackupController extends Controller {\n    public function store() {\n        \$this->model->save();\n    }\n}\n",
+            'app/Http/Controllers/BackupController.php'
+        );
+        $routes = $this->temp(
+            "<?php\nuse Illuminate\\Support\\Facades\\Route;\n" .
+            "Route::post('/backup', 'App\\Http\\Controllers\\BackupController@store')->middleware('can:admin-only');\n",
+            'routes/web.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$controller, $routes]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testAccessControlFlagsReviewForCustomGroupMiddleware(): void
+    {
+        $controller = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\n" .
+            "class BackupController extends Controller {\n    public function destroy() {\n        \$this->model->delete();\n    }\n}\n",
+            'app/Http/Controllers/BackupController.php'
+        );
+        $routes = $this->temp(
+            "<?php\nuse Illuminate\\Support\\Facades\\Route;\n" .
+            "Route::middleware(['checkLevel'])->group(function () {\n" .
+            "    Route::post('/backup/delete', 'App\\Http\\Controllers\\BackupController@destroy');\n" .
+            "});\n",
+            'routes/web.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$controller, $routes]);
+
+        // Custom middleware is an unverifiable gate: review, not suppression.
+        self::assertCount(1, $issues);
+        self::assertSame('OWASP_BROKEN_ACCESS_CONTROL', $issues[0]->rule);
+        self::assertSame('review', $issues[0]->metadata['semantic_status'] ?? null);
+        self::assertSame(['checkLevel'], $issues[0]->metadata['middleware'] ?? null);
+    }
+
+    public function testAccessControlFlagsReviewForProviderWrappedAuthApi(): void
+    {
+        // RouteServiceProvider-style: routes/api.php is required inside a
+        // middleware group (base_path() target resolved by walking up).
+        // auth:api authenticates but proves no authorization → review.
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'qc-owasp-rsp-' . uniqid('', true);
+        $files = [
+            'app/Http/Controllers/Api/BackupController.php' => "<?php\nnamespace App\\Http\\Controllers\\Api;\n" .
+                "class BackupController extends Controller {\n    public function store() {\n        \$this->model->save();\n    }\n}\n",
+            'routes/api.php' => "<?php\nuse Illuminate\\Support\\Facades\\Route;\n" .
+                "Route::post('/backup', 'App\\Http\\Controllers\\Api\\BackupController@store');\n",
+            'app/Providers/RouteServiceProvider.php' => "<?php\nnamespace App\\Providers;\nuse Illuminate\\Support\\Facades\\Route;\n" .
+                "class RouteServiceProvider {\n    public function boot(): void {\n" .
+                "        Route::group(['middleware' => 'auth:api', 'prefix' => 'api'], function () {\n" .
+                "            require base_path('routes/api.php');\n" .
+                "        });\n    }\n}\n",
+        ];
+        $paths = [];
+        foreach ($files as $rel => $content) {
+            $path = $dir . DIRECTORY_SEPARATOR . $rel;
+            @mkdir(dirname($path), 0777, true);
+            file_put_contents($path, $content);
+            $paths[] = $path;
+        }
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze($paths);
+
+        self::assertCount(1, $issues);
+        self::assertSame('review', $issues[0]->metadata['semantic_status'] ?? null);
+        self::assertSame(['auth:api'], $issues[0]->metadata['middleware'] ?? null);
+    }
+
+    public function testAccessControlStillFlagsProviderGroupWithoutAuth(): void
+    {
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'qc-owasp-rsp-' . uniqid('', true);
+        $files = [
+            'app/Http/Controllers/Api/BackupController.php' => "<?php\nnamespace App\\Http\\Controllers\\Api;\n" .
+                "class BackupController extends Controller {\n    public function store() {\n        \$this->model->save();\n    }\n}\n",
+            'routes/api.php' => "<?php\nuse Illuminate\\Support\\Facades\\Route;\n" .
+                "Route::post('/backup', 'App\\Http\\Controllers\\Api\\BackupController@store');\n",
+            'app/Providers/RouteServiceProvider.php' => "<?php\nnamespace App\\Providers;\nuse Illuminate\\Support\\Facades\\Route;\n" .
+                "class RouteServiceProvider {\n    public function boot(): void {\n" .
+                "        Route::group(['prefix' => 'api'], function () {\n" .
+                "            require base_path('routes/api.php');\n" .
+                "        });\n    }\n}\n",
+        ];
+        $paths = [];
+        foreach ($files as $rel => $content) {
+            $path = $dir . DIRECTORY_SEPARATOR . $rel;
+            @mkdir(dirname($path), 0777, true);
+            file_put_contents($path, $content);
+            $paths[] = $path;
+        }
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze($paths);
+
+        self::assertSame('OWASP_BROKEN_ACCESS_CONTROL', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testAccessControlSkipsAuthorizingFormRequest(): void
+    {
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'qc-owasp-fr-' . uniqid('', true);
+        $files = [
+            'app/Http/Controllers/AccountController.php' => "<?php\nnamespace App\\Http\\Controllers;\nuse App\\Http\\Requests\\CreateAccountRequest;\n" .
+                "class AccountController extends Controller {\n    public function store(CreateAccountRequest \$request) {\n        return \$this->repo->store(\$request->validated());\n    }\n}\n",
+            'app/Http/Requests/CreateAccountRequest.php' => "<?php\nnamespace App\\Http\\Requests;\n" .
+                "class CreateAccountRequest extends \\Illuminate\\Foundation\\Http\\FormRequest {\n    public function authorize() {\n        return \\Ninja::isHosted();\n    }\n}\n",
+        ];
+        $paths = [];
+        foreach ($files as $rel => $content) {
+            $path = $dir . DIRECTORY_SEPARATOR . $rel;
+            @mkdir(dirname($path), 0777, true);
+            file_put_contents($path, $content);
+            $paths[] = $path;
+        }
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze($paths);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testAccessControlStillFlagsTrivialFormRequest(): void
+    {
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'qc-owasp-fr-' . uniqid('', true);
+        $files = [
+            'app/Http/Controllers/AccountController.php' => "<?php\nnamespace App\\Http\\Controllers;\nuse App\\Http\\Requests\\OpenRequest;\n" .
+                "class AccountController extends Controller {\n    public function store(OpenRequest \$request) {\n        return \$this->repo->store(\$request->validated());\n    }\n}\n",
+            'app/Http/Requests/OpenRequest.php' => "<?php\nnamespace App\\Http\\Requests;\n" .
+                "class OpenRequest extends \\Illuminate\\Foundation\\Http\\FormRequest {\n    public function authorize() {\n        return true;\n    }\n}\n",
+        ];
+        $paths = [];
+        foreach ($files as $rel => $content) {
+            $path = $dir . DIRECTORY_SEPARATOR . $rel;
+            @mkdir(dirname($path), 0777, true);
+            file_put_contents($path, $content);
+            $paths[] = $path;
+        }
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze($paths);
+
+        self::assertSame('OWASP_BROKEN_ACCESS_CONTROL', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testAccessControlSkipsEnforcingGateDenies(): void
+    {
+        $controller = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse Illuminate\\Support\\Facades\\Gate;\n" .
+            "class PostController extends Controller {\n    public function store(\\App\\Models\\Post \$post) {\n        if (Gate::forUser(auth()->user())->denies('update', \$post)) {\n            throw (new \\Illuminate\\Database\\Eloquent\\ModelNotFoundException)->setModel(\\App\\Models\\Post::class, [\$post->id]);\n        }\n        \$post->save();\n    }\n}\n",
+            'app/Http/Controllers/PostController.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$controller]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testAccessControlStillFlagsBareGateAllows(): void
+    {
+        $controller = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse Illuminate\\Support\\Facades\\Gate;\n" .
+            "class PostController extends Controller {\n    public function store(\\App\\Models\\Post \$post) {\n        Gate::allows('update', \$post);\n        \$post->save();\n    }\n}\n",
+            'app/Http/Controllers/PostController.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$controller]);
+
+        self::assertSame('OWASP_BROKEN_ACCESS_CONTROL', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testAccessControlSkipsAuthenticateCall(): void
+    {
+        $controller = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers\\Auth;\n" .
+            "class LoginController extends Controller {\n    public function store(\\App\\Http\\Requests\\LoginRequest \$request) {\n        \$request->authenticate();\n        return redirect('/dashboard');\n    }\n}\n",
+            'app/Http/Controllers/Auth/LoginController.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$controller]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testAccessControlFlagsReviewForGroupNestedInInstallerGuard(): void
+    {
+        $controller = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\n" .
+            "class LinkController extends Controller {\n    public function sort(\\Illuminate\\Http\\Request \$request) {\n        \\App\\Models\\Link::query()->update(['sort' => 1]);\n    }\n}\n",
+            'app/Http/Controllers/LinkController.php'
+        );
+        $routes = $this->temp(
+            "<?php\nuse Illuminate\\Support\\Facades\\Route;\n" .
+            "if (file_exists(base_path('INSTALLERLOCK'))) {\n" .
+            "    Route::middleware(['auth'])->group(function () {\n" .
+            "        Route::post('/sort', 'App\\Http\\Controllers\\LinkController@sort');\n" .
+            "    });\n" .
+            "} else {\n" .
+            "    Route::get('/install', 'App\\Http\\Controllers\\InstallerController@show');\n" .
+            "}\n",
+            'routes/web.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$controller, $routes]);
+
+        // auth-only group (even nested in an installer guard) → review.
+        self::assertCount(1, $issues);
+        self::assertSame('review', $issues[0]->metadata['semantic_status'] ?? null);
+    }
+
+    public function testAccessControlSkipsHashEqualsCapability(): void
+    {
+        $controller = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\n" .
+            "class OpenController extends Controller {\n    public function update(int \$id, string \$hash) {\n        \$thread = \\App\\Models\\Thread::findOrFail(\$id);\n        if (!\\Helper::hashEquals(\$hash, \\App\\Models\\Thread::trackingHash(\$thread))) {\n            throw new \\RuntimeException('bad signature');\n        }\n        \$thread->markAsRead();\n        \$thread->save();\n    }\n}\n",
+            'app/Http/Controllers/OpenController.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$controller]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testAccessControlStillFlagsThrottleOnlyRoute(): void
+    {
+        $controller = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\n" .
+            "class PushController extends Controller {\n    public function store() {\n        \$this->model->save();\n    }\n}\n",
+            'app/Http/Controllers/PushController.php'
+        );
+        $routes = $this->temp(
+            "<?php\nuse Illuminate\\Support\\Facades\\Route;\n" .
+            "Route::post('/push', 'App\\Http\\Controllers\\PushController@store')->middleware('throttle:forms');\n",
+            'routes/web.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$controller, $routes]);
+
+        self::assertSame('OWASP_BROKEN_ACCESS_CONTROL', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testAccessControlFlagsReviewForApiKeyMiddleware(): void
+    {
+        $controller = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers\\Api;\n" .
+            "class SyncStatusController extends Controller {\n    public function trigger() {\n        \$this->model->save();\n    }\n}\n",
+            'app/Http/Controllers/Api/SyncStatusController.php'
+        );
+        $routes = $this->temp(
+            "<?php\nuse Illuminate\\Support\\Facades\\Route;\n" .
+            "Route::prefix('sync')->middleware('edge.api.key')->group(function () {\n" .
+            "    Route::post('/trigger', 'App\\Http\\Controllers\\Api\\SyncStatusController@trigger');\n" .
+            "});\n",
+            'routes/api.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$controller, $routes]);
+
+        // API-key guards authenticate identity, not permission → review.
+        self::assertCount(1, $issues);
+        self::assertSame('review', $issues[0]->metadata['semantic_status'] ?? null);
+    }
+
+    public function testAccessControlFlagsReviewForLoginCheckMiddleware(): void
+    {
+        $controller = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\n" .
+            "class CourseController extends Controller {\n    public function store() {\n        \$this->model->save();\n    }\n}\n",
+            'app/Http/Controllers/CourseController.php'
+        );
+        $routes = $this->temp(
+            "<?php\nuse Illuminate\\Support\\Facades\\Route;\n" .
+            "Route::middleware(['checkLogin'])->group(function () {\n" .
+            "    Route::post('/courses', 'App\\Http\\Controllers\\CourseController@store');\n" .
+            "});\n",
+            'routes/web.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$controller, $routes]);
+
+        self::assertCount(1, $issues);
+        self::assertSame('review', $issues[0]->metadata['semantic_status'] ?? null);
+    }
+
+    public function testAccessControlStillFlagsGuestMiddleware(): void
+    {
+        $controller = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\n" .
+            "class CourseController extends Controller {\n    public function store() {\n        \$this->model->save();\n    }\n}\n",
+            'app/Http/Controllers/CourseController.php'
+        );
+        $routes = $this->temp(
+            "<?php\nuse Illuminate\\Support\\Facades\\Route;\n" .
+            "Route::middleware(['guestAdmin'])->group(function () {\n" .
+            "    Route::post('/courses', 'App\\Http\\Controllers\\CourseController@store');\n" .
+            "});\n",
+            'routes/web.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$controller, $routes]);
+
+        self::assertSame('OWASP_BROKEN_ACCESS_CONTROL', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testAccessControlRouteMiddlewareCanBeDisabled(): void
+    {
+        $controller = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\n" .
+            "class BackupController extends Controller {\n    public function store() {\n        \$this->model->save();\n    }\n}\n",
+            'app/Http/Controllers/BackupController.php'
+        );
+        $routes = $this->temp(
+            "<?php\nuse Illuminate\\Support\\Facades\\Route;\n" .
+            "Route::post('/backup', 'App\\Http\\Controllers\\BackupController@store')->middleware('can:admin-only');\n",
+            'routes/web.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer(false))->analyze([$controller, $routes]);
+
+        self::assertSame('OWASP_BROKEN_ACCESS_CONTROL', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testAccessControlFlagsReviewForAdminRequiredFile(): void
+    {
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'qc-owasp-' . uniqid('', true);
+        @mkdir($dir . DIRECTORY_SEPARATOR . 'routes', 0777, true);
+        @mkdir($dir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Http' . DIRECTORY_SEPARATOR . 'Controllers', 0777, true);
+
+        $controller = $dir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Http'
+            . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'AttributeController.php';
+        file_put_contents(
+            $controller,
+            "<?php\nnamespace App\\Http\\Controllers;\n" .
+            "class AttributeController extends Controller {\n    public function store() {\n        \$this->model->save();\n    }\n}\n"
+        );
+
+        $catalog = $dir . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'catalog-routes.php';
+        file_put_contents(
+            $catalog,
+            "<?php\nuse Illuminate\\Support\\Facades\\Route;\nuse App\\Http\\Controllers\\AttributeController;\n" .
+            "Route::controller(AttributeController::class)->prefix('attributes')->group(function () {\n" .
+            "    Route::post('create', 'store');\n" .
+            "});\n"
+        );
+
+        $web = $dir . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'web.php';
+        file_put_contents(
+            $web,
+            "<?php\nuse Illuminate\\Support\\Facades\\Route;\n" .
+            "Route::group(['middleware' => ['admin']], function () {\n" .
+            "    require 'catalog-routes.php';\n" .
+            "});\n"
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$controller, $catalog, $web]);
+
+        // `admin` is custom middleware: unverifiable gate → review.
+        self::assertCount(1, $issues);
+        self::assertSame('review', $issues[0]->metadata['semantic_status'] ?? null);
+    }
+
+    public function testAccessControlFlagsReviewForLegacyUsesActionWithAuth(): void
+    {
+        $controller = $this->temp(
+            "<?php\nnamespace Aimeos\\Shop\\Controller;\n" .
+            "class AccountController extends Controller {\n    public function store() {\n        \$this->model->save();\n    }\n}\n",
+            'src/Controller/AccountController.php'
+        );
+        $routes = $this->temp(
+            "<?php\nuse Illuminate\\Support\\Facades\\Route;\n" .
+            "Route::group(['middleware' => ['web', 'auth']], function () {\n" .
+            "    Route::match(['POST'], 'profile', ['as' => 'shop.account', 'uses' => 'Aimeos\\\\Shop\\\\Controller\\\\AccountController@store']);\n" .
+            "});\n",
+            'routes/shop.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$controller, $routes]);
+
+        // web + auth authenticates but proves no authorization → review.
+        self::assertCount(1, $issues);
+        self::assertSame('review', $issues[0]->metadata['semantic_status'] ?? null);
+    }
+
+    public function testAccessControlStillFlagsLegacyUsesActionWithoutAuth(): void
+    {
+        $controller = $this->temp(
+            "<?php\nnamespace Aimeos\\Shop\\Controller;\n" .
+            "class JsonapiController extends Controller {\n    public function deleteAction() {\n        \$this->client->delete();\n    }\n}\n",
+            'src/Controller/JsonapiController.php'
+        );
+        $routes = $this->temp(
+            "<?php\nuse Illuminate\\Support\\Facades\\Route;\n" .
+            "Route::group(['middleware' => ['web', 'api']], function () {\n" .
+            "    Route::match(['DELETE'], '{resource}', ['as' => 'shop.jsonapi.delete', 'uses' => 'Aimeos\\\\Shop\\\\Controller\\\\JsonapiController@deleteAction']);\n" .
+            "});\n",
+            'routes/shop.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$controller, $routes]);
+
+        // web + api carry no access meaning → exposed, high confidence.
+        self::assertSame('OWASP_BROKEN_ACCESS_CONTROL', $this->rules($issues)[0] ?? null);
+        self::assertSame('exposed', $issues[0]->metadata['semantic_status'] ?? null);
+    }
+
+    public function testAccessControlDistinguishesSameNamedControllers(): void
+    {
+        $adminController = $this->temp(
+            "<?php\nnamespace Webkul\\Admin\\Http\\Controllers\\Catalog;\n" .
+            "class AttributeController extends Controller {\n    public function store() {\n        \$this->model->save();\n    }\n}\n",
+            'packages/Webkul/Admin/src/Http/Controllers/Catalog/AttributeController.php'
+        );
+        $shopController = $this->temp(
+            "<?php\nnamespace Webkul\\Shop\\Http\\Controllers\\Catalog;\n" .
+            "class AttributeController extends Controller {\n    public function store() {\n        \$this->model->save();\n    }\n}\n",
+            'packages/Webkul/Shop/src/Http/Controllers/Catalog/AttributeController.php'
+        );
+        $adminRoutes = $this->temp(
+            "<?php\nuse Illuminate\\Support\\Facades\\Route;\nuse Webkul\\Admin\\Http\\Controllers\\Catalog\\AttributeController;\n" .
+            "Route::middleware(['admin'])->group(function () {\n" .
+            "    Route::controller(AttributeController::class)->group(function () {\n" .
+            "        Route::post('create', 'store');\n" .
+            "    });\n" .
+            "});\n",
+            'packages/Webkul/Admin/src/Routes/web.php'
+        );
+        $shopRoutes = $this->temp(
+            "<?php\nuse Illuminate\\Support\\Facades\\Route;\nuse Webkul\\Shop\\Http\\Controllers\\Catalog\\AttributeController;\n" .
+            "Route::controller(AttributeController::class)->group(function () {\n" .
+            "    Route::post('create', 'store');\n" .
+            "});\n",
+            'packages/Webkul/Shop/src/Routes/web.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze(
+            [$adminController, $shopController, $adminRoutes, $shopRoutes]
+        );
+
+        // Same-named controllers stay separated: admin context (custom
+        // `admin` middleware) is review, public shop context is exposed.
+        self::assertCount(2, $issues);
+        $statusBySide = [];
+        foreach ($issues as $issue) {
+            $side = str_contains((string) ($issue->file ?? ''), 'Admin') ? 'admin' : 'shop';
+            $statusBySide[$side] = $issue->metadata['semantic_status'] ?? null;
+        }
+        self::assertSame('review', $statusBySide['admin'] ?? null);
+        self::assertSame('exposed', $statusBySide['shop'] ?? null);
+    }
+
+    public function testCommandInjectionSkipsEscapedShellArg(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$fromPath = trim((string) shell_exec('where ' . escapeshellarg(\$tool)));\n",
+            'app/Services/BackupService.php'
+        );
+
+        $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testCommandInjectionSkipsProcessArgumentArray(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass BackupService {\n    public function create(): void {\n" .
+            "        \$command = ['mysqldump', '-h', 'localhost'];\n" .
+            "        \$process = new Symfony\\Component\\Process\\Process(\$command);\n" .
+            "        \$process->run();\n    }\n}\n",
+            'app/Services/BackupService.php'
+        );
+
+        $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testCommandInjectionSkipsTestPaths(): void
+    {
+        $file = $this->temp(
+            "<?php\nsystem(\$request->input('cmd'));\n",
+            'tests/Feature/RunCommandTest.php'
+        );
+
+        $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testCommandInjectionSkipsDeployTimeConcat(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass SetupDocs {\n    protected function documentation(): void {\n" .
+            "        \$artisan = base_path('artisan');\n" .
+            "        passthru(PHP_BINARY . \" \$artisan migrate:fresh --force -q\");\n" .
+            "    }\n}\n",
+            'app/Console/Commands/SetupDocumentation.php'
+        );
+
+        $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testCommandInjectionStillFlagsDerivedVariable(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass SetupDocs {\n    protected function documentation(): void {\n" .
+            "        \$v = \$this->getVerbosity();\n" .
+            "        passthru(PHP_BINARY . \" artisan scribe:generate --force\$v\");\n" .
+            "    }\n}\n",
+            'app/Console/Commands/SetupDocumentation.php'
+        );
+
+        $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_COMMAND_INJECTION', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testSsrfSkipsGuzzleClientConstructor(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass HttpRequestService {\n    public function buildClient(int \$timeout): object {\n" .
+            "        return new GuzzleHttp\\Client(['timeout' => \$timeout]);\n" .
+            "    }\n}\n",
+            'app/Http/HttpRequestService.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSsrfSkipsUploadedFileRealPath(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass ImageService {\n    public function store(\$file): string {\n" .
+            "        return (string) file_get_contents(\$file->getRealPath());\n" .
+            "    }\n}\n",
+            'app/Uploads/ImageService.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSsrfSkipsFopenWriteMode(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$handle = fopen(\$fullPath, 'w');\n",
+            'app/Jobs/ExportBankFileJob.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSsrfSkipsLocalPathVariable(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$contents = file_get_contents(\$source);\n",
+            'app/Services/BackupService.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSsrfStillFlagsUrlVariable(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$data = file_get_contents(\$url);\n",
+            'app/Services/ExternalService.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_SSRF', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testSsrfSkipsTestPaths(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$data = file_get_contents(\$request->input('url'));\n",
+            'tests/Feature/DownloadTest.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSsrfSkipsSprintfWithFixedHost(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$url = sprintf('https://github.com/aquasecurity/trivy/releases/download/v%s/t.tgz', \$version);\n\$fp = fopen(\$url, 'rb');\n",
+            'src/Tools/Downloader.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSsrfStillFlagsDynamicSubdomain(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$lang = currentLang();\n\$url = \"https://\$lang.wikipedia.org/w/api.php\";\n\$r = file_get_contents(\$url);\n",
+            'app/Helpers/WikipediaHelper.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_SSRF', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testSsrfReadsGuzzleRequestUrlFromSecondArg(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass ApiClient {\n    public function call(string \$method, string \$endpoint): array {\n" .
+            "        \$response = \$client->request(\$method, \$endpoint, []);\n" .
+            "        return [];\n    }\n}\n",
+            'app/Services/ApiClient.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_SSRF', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testSsrfSkipsDeployTimeUrlConcat(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass PrinterController extends Controller {\n    public function list() {\n" .
+            "        \$res = \$client->request('GET', rtrim(env('API_URL'), '/') . '/api/admin/printers/get-all', []);\n" .
+            "        return [];\n    }\n}\n",
+            'app/Http/Controllers/PrinterController.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testCommandInjectionSkipsTypedArrayProcessParam(): void
+    {
+        $file = $this->temp(
+            "<?php\nuse Symfony\\Component\\Process\\Process;\nclass Runner {\n    /** @return array{0: int, 1: string, 2: string} */\n" .
+            "    protected function runProcess(array \$command): array {\n        \$process = new Process(\$command);\n        \$process->run();\n        return [0, '', ''];\n    }\n}\n",
+            'src/Checkers/Runner.php'
+        );
+
+        $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testCommandInjectionSkipsTernaryArrayProcess(): void
+    {
+        $file = $this->temp(
+            "<?php\nuse Symfony\\Component\\Process\\Process;\nclass Extractor {\n    public function extract(string \$archive, string \$dest): void {\n" .
+            "        \$cmd = str_ends_with(\$archive, '.zip') ? ['unzip', '-o', \$archive, '-d', \$dest] : ['tar', '-xzf', \$archive, '-C', \$dest];\n" .
+            "        \$process = new Process(\$cmd);\n        \$process->run();\n    }\n}\n",
+            'src/Tools/Extractor.php'
+        );
+
+        $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testCommandInjectionSkipsPrivateHelperWithLiteralCallSites(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass EdgeManager {\n" .
+            "    public function handle(string \$action): void {\n" .
+            "        if (\$action === 'start') { \$this->controlServices('start'); }\n" .
+            "        if (\$action === 'stop') { \$this->controlServices('stop'); }\n" .
+            "    }\n" .
+            "    private function controlServices(string \$cmd): void {\n" .
+            "        exec(\"nssm \$cmd svc 2>&1\", \$output, \$code);\n" .
+            "    }\n}\n",
+            'app/Http/Controllers/EdgeManagerController.php'
+        );
+
+        $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testCommandInjectionStillFlagsPrivateHelperWithInputCallSite(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass EdgeManager {\n" .
+            "    public function handle(string \$action): void {\n" .
+            "        \$this->controlServices(\$action);\n" .
+            "    }\n" .
+            "    private function controlServices(string \$cmd): void {\n" .
+            "        exec(\"nssm \$cmd svc 2>&1\", \$output, \$code);\n" .
+            "    }\n}\n",
+            'app/Http/Controllers/EdgeManagerController.php'
+        );
+
+        $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_COMMAND_INJECTION', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testCommandInjectionSkipsForeachOverClassConst(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass EdgeManager {\n    private const SERVICES = ['svc-a', 'svc-b'];\n" .
+            "    private function controlServices(string \$cmd): void {\n" .
+            "        foreach (self::SERVICES as \$svc) {\n" .
+            "            exec(\"nssm \$cmd \$svc 2>&1\", \$output, \$code);\n" .
+            "        }\n" .
+            "    }\n" .
+            "    public function start(): void {\n" .
+            "        \$this->controlServices('start');\n" .
+            "    }\n}\n",
+            'app/Http/Controllers/EdgeManagerController.php'
+        );
+
+        $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testCommandInjectionSkipsEnvBinaryWithEscapedArgs(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass PdfService {\n    public function render(string \$pdfPath, int \$storeId, string \$paperSize): void {\n" .
+            "        \$input = escapeshellarg(\$pdfPath);\n" .
+            "        \$resizeWidth = \$paperSize == 80 ? 474 : 365;\n" .
+            "        \$imgMagickCLI = env('IMAGE_MAGICK_CLI', 'convert');\n" .
+            "        \$command = \"\$imgMagickCLI -density 203 {\$input} -resize {\$resizeWidth} out.png\";\n" .
+            "        exec(\$command, \$output, \$status);\n" .
+            "    }\n}\n",
+            'app/Services/BaseService.php'
+        );
+
+        $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testXxeSkipsTestPaths(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$xml = simplexml_load_string(\$raw);\n",
+            'tests/Unit/GovEfileTest.php'
+        );
+
+        $issues = (new OwaspXxeAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testCommandInjectionFlagsBacktickWithInput(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$out = `ls \$dir`;\n",
+            'app/Services/ListingService.php'
+        );
+
+        $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_COMMAND_INJECTION', $this->rules($issues)[0] ?? null);
+        self::assertSame(Severity::Critical, $issues[0]->severity ?? null);
+    }
+
+    public function testCommandInjectionSkipsBacktickLiteral(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$out = `ls -la`;\n",
+            'app/Services/ListingService.php'
+        );
+
+        $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testAccessControlSkipsCanAuthorizedMethod(): void
+    {
+        $file = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse Illuminate\\Http\\Request;\n" .
+            "class PostController extends Controller {\n    public function update(Request \$request, \$id) {\n" .
+            "        \$post = Post::findOrFail(\$id);\n        \$request->user()->can('update', \$post);\n        \$post->save();\n    }\n}\n",
+            'app/Http/Controllers/PostController.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSsrfFlagsNullsafeClientCall(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$response = \$client?->get(\$request->input('target'));\n",
+            'app/Services/ExternalService.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertContains('OWASP_SSRF', $this->rules($issues));
+    }
+
+    public function testSsrfReadsNamedUrlArgument(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$response = \$client->get(url: \$request->input('target'));\n",
+            'app/Services/ExternalService.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertContains('OWASP_SSRF', $this->rules($issues));
+    }
+
+    public function testSsrfFlagsCurlSetoptUrl(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$ch = curl_init();\ncurl_setopt(\$ch, CURLOPT_URL, \$request->input('target'));\n",
+            'app/Services/ExternalService.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertContains('OWASP_SSRF', $this->rules($issues));
+    }
+
+    public function testSsrfFlagsCopySource(): void
+    {
+        $file = $this->temp(
+            "<?php\ncopy(\$request->input('src'), \$dest);\n",
+            'app/Services/ExternalService.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertContains('OWASP_SSRF', $this->rules($issues));
+    }
+
+    public function testSsrfFlagsReadfileSource(): void
+    {
+        $file = $this->temp(
+            "<?php\nreadfile(\$request->input('file'));\n",
+            'app/Services/ExternalService.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertContains('OWASP_SSRF', $this->rules($issues));
+    }
+
+    public function testSsrfSkipsFileWithLocalPath(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$lines = file(\$path);\n",
+            'app/Services/ExternalService.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSsrfFlagsFsockopenHost(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$fp = fsockopen(\$host, 80);\n",
+            'app/Services/ExternalService.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertContains('OWASP_SSRF', $this->rules($issues));
+    }
+
+    public function testSsrfSkipsFsockopenLiteralHost(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$fp = fsockopen('localhost', 80);\n",
+            'app/Services/ExternalService.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSsrfFlagsStreamSocketClient(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$fp = stream_socket_client('tcp://' . \$host . ':80');\n",
+            'app/Services/ExternalService.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertContains('OWASP_SSRF', $this->rules($issues));
+    }
+
+    public function testSsrfSkipsGlobDirectoryListing(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$logos = glob('public/uploads/*.*');\nforeach (\$logos as \$logo) {\n    \$contents = file_get_contents(\$logo);\n}\n",
+            'app/Console/Commands/MoveUploads.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSsrfSkipsGlobElementAssignment(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$uploads['a'] = glob('public/uploads/a/*.*');\nforeach (\$uploads as \$type => \$list) {\n    \$contents = file_get_contents(\$list[0]);\n}\n",
+            'app/Console/Commands/MoveUploads.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSsrfStillFlagsRequestArrayElement(): void
+    {
+        $file = $this->temp(
+            "<?php\n\$data = \$request->input('files');\n\$contents = file_get_contents(\$data[0]);\n",
+            'app/Services/ExternalService.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertContains('OWASP_SSRF', $this->rules($issues));
+    }
+
+    public function testSsrfSkipsSanitizerGatedUrl(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass RemoteHelper {\n    public static function fetch(string \$url): array {\n        if (!self::sanitizeRemoteUrl(\$url)) {\n            throw new \\Exception('bad url');\n        }\n        return get_headers(\$url);\n    }\n}\n",
+            'app/Services/RemoteHelper.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSsrfSanitizerGateDoesNotLeakAcrossFunctions(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass A {\n    public static function clean(string \$u): ?string {\n        if (!self::sanitizeRemoteUrl(\$u)) {\n            return null;\n        }\n        return \$u;\n    }\n}\nclass H {\n    public static function get(string \$url): array {\n        return get_headers(\$url);\n    }\n}\n",
+            'app/Services/RemoteHelper.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertContains('OWASP_SSRF', $this->rules($issues));
+    }
+
+    public function testSsrfSkipsDirnameDeployTime(): void
+    {
+        $file = $this->temp(
+            "<?php\ncopy(dirname(__DIR__, 2) . '/resources/stubs/x.stub', \$target);\n",
+            'app/Console/PublishCommand.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSsrfSkipsReaddirListing(): void
+    {
+        $file = $this->temp(
+            "<?php\nif (\$handle = opendir('themes')) {\n    while (false !== (\$entry = readdir(\$handle))) {\n        \$text = file_get_contents('themes/' . \$entry . '/readme.md');\n    }\n}\n",
+            'app/Services/ThemeService.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSsrfSkipsEnvAssignedProperty(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass EmsCommand {\n    private \$apiUrl;\n    public function __construct() {\n        \$this->apiUrl = env('EMS_URL');\n    }\n    public function run(\$client): void {\n        \$client->request('POST', \$this->apiUrl, []);\n    }\n}\n",
+            'app/Console/Commands/EmsCommand.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSsrfStillFlagsRequestAssignedProperty(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass EmsCommand {\n    private \$apiUrl;\n    public function run(\$client, \$request): void {\n        \$this->apiUrl = \$request->input('url');\n        \$client->request('POST', \$this->apiUrl, []);\n    }\n}\n",
+            'app/Console/Commands/EmsCommand.php'
+        );
+
+        $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
+
+        self::assertContains('OWASP_SSRF', $this->rules($issues));
+    }
+
+    public function testSstiFlagsViewFacadeMake(): void
+    {
+        $file = $this->temp(
+            "<?php\nreturn \\Illuminate\\Support\\Facades\\View::make(\$template);\n",
+            'app/Http/Controllers/PageController.php'
+        );
+
+        $issues = (new OwaspSstiAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_SSTI', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testSstiSkipsViewFacadeMakeLiteral(): void
+    {
+        $file = $this->temp(
+            "<?php\nreturn \\Illuminate\\Support\\Facades\\View::make('pages.home');\n",
+            'app/Http/Controllers/PageController.php'
+        );
+
+        $issues = (new OwaspSstiAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSstiFlagsViewComposerVariable(): void
+    {
+        $file = $this->temp(
+            "<?php\n\\View::composer(\$view, function (\$v) {});\n",
+            'app/Providers/ViewServiceProvider.php'
+        );
+
+        $issues = (new OwaspSstiAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_SSTI', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testSstiSkipsViewComposerLiteral(): void
+    {
+        $file = $this->temp(
+            "<?php\n\\View::composer('admin.*', function (\$v) {});\n",
+            'app/Providers/ViewServiceProvider.php'
+        );
+
+        $issues = (new OwaspSstiAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSstiSkipsInArrayAllowListedView(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass ModalController {\n    public function show(string \$type) {\n        \$allowed = ['manufacturer', 'model', 'user'];\n        if (in_array(\$type, \$allowed)) {\n            return view(\"blade.modals.{\$type}\");\n        }\n        abort(404);\n    }\n}\n",
+            'app/Http/Controllers/ModalController.php'
+        );
+
+        $issues = (new OwaspSstiAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSstiSkipsInlineInArrayAllowList(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass ModalController {\n    public function show(string \$type) {\n        if (in_array(\$type, ['a', 'b'], true)) {\n            return view(\$type);\n        }\n        abort(404);\n    }\n}\n",
+            'app/Http/Controllers/ModalController.php'
+        );
+
+        $issues = (new OwaspSstiAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSstiStillFlagsDynamicListGuard(): void
+    {
+        $file = $this->temp(
+            "<?php\nclass ModalController {\n    public function show(string \$type, array \$list) {\n        if (in_array(\$type, \$list)) {\n            return view(\"blade.modals.{\$type}\");\n        }\n        abort(404);\n    }\n}\n",
+            'app/Http/Controllers/ModalController.php'
+        );
+
+        $issues = (new OwaspSstiAnalyzer())->analyze([$file]);
+
+        self::assertSame('OWASP_SSTI', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testAccessControlSkipsExtraMiddlewareProtectedAction(): void
+    {
+        $controller = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\n" .
+            "class VaultController extends Controller {\n    public function store() {\n        \$this->model->save();\n    }\n}\n",
+            'app/Http/Controllers/VaultController.php'
+        );
+        $routes = $this->temp(
+            "<?php\nuse Illuminate\\Support\\Facades\\Route;\n" .
+            "Route::post('/vault', 'App\\Http\\Controllers\\VaultController@store')->middleware('myShield');\n",
+            'routes/web.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer(true, ['extra_middleware' => ['myShield']]))
+            ->analyze([$controller, $routes]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testAccessControlStillFlagsExtraMiddlewareContentWithDefaultOptions(): void
+    {
+        $controller = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\n" .
+            "class VaultController extends Controller {\n    public function store() {\n        \$this->model->save();\n    }\n}\n",
+            'app/Http/Controllers/VaultController.php'
+        );
+        $routes = $this->temp(
+            "<?php\nuse Illuminate\\Support\\Facades\\Route;\n" .
+            "Route::post('/vault', 'App\\Http\\Controllers\\VaultController@store')->middleware('myShield');\n",
+            'routes/web.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer())->analyze([$controller, $routes]);
+
+        self::assertSame('OWASP_BROKEN_ACCESS_CONTROL', $this->rules($issues)[0] ?? null);
+    }
+
+    public function testAccessControlStillFlagsUnknownMiddlewareWithExtraConfigured(): void
+    {
+        $controller = $this->temp(
+            "<?php\nnamespace App\\Http\\Controllers;\n" .
+            "class VaultController extends Controller {\n    public function store() {\n        \$this->model->save();\n    }\n}\n",
+            'app/Http/Controllers/VaultController.php'
+        );
+        $routes = $this->temp(
+            "<?php\nuse Illuminate\\Support\\Facades\\Route;\n" .
+            "Route::post('/vault', 'App\\Http\\Controllers\\VaultController@store')->middleware('throttle:forms');\n",
+            'routes/web.php'
+        );
+
+        $issues = (new OwaspAccessControlAnalyzer(true, ['extra_middleware' => ['myShield']]))
+            ->analyze([$controller, $routes]);
+
+        self::assertSame('OWASP_BROKEN_ACCESS_CONTROL', $this->rules($issues)[0] ?? null);
+    }
+}

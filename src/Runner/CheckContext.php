@@ -1,0 +1,160 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Rampart\Php\Runner;
+
+use Rampart\Php\Framework\FrameworkProfile;
+
+final class CheckContext
+{
+    /**
+     * Detected (or forced) framework layout. Set by CheckRunner before any
+     * checker runs; analyzers that need routes/views read it from here.
+     */
+    public ?FrameworkProfile $frameworkProfile = null;
+
+    public string $basePath;
+
+    /** @var list<string> */
+    public array $paths;
+
+    /** @var array<string, mixed> */
+    public array $config;
+
+    public string $outputDir;
+
+    public bool $noCache;
+
+    public bool $noAutoInstall;
+
+    public bool $ci;
+
+    public bool $quiet;
+
+    public string $packageVersion;
+
+    public string $failOn;
+
+    public string $tier;
+
+    public string $minConfidence;
+
+    public string $minSeverity;
+
+    public int $exitCode = 0;
+
+    /** @var list<string> checker names to run; empty means all */
+    public array $only = [];
+
+    /** @var list<string> checker names to skip */
+    public array $exclude = [];
+
+    public ?string $baselineFile = null;
+
+    public bool $fix = false;
+
+    /** Profiling switch (PERF-EVAL-1): timers + counters, findings unchanged. */
+    public bool $profile = false;
+
+    /** @var array<string, mixed> */
+    public array $metadata = [];
+
+    /**
+     * Two report modes: findings-only (false) vs findings plus how-to-fix
+     * guidance (true, default). Reads the `remediation` config key so both
+     * entry points and tests share one switch without another ctor argument.
+     * Machine reports (JSON/SARIF) always carry full data.
+     */
+    public function showRemediation(): bool
+    {
+        $value = $this->config['remediation'] ?? true;
+
+        return (bool) $value;
+    }
+
+    /**
+     * Client-facing HTML: findings only, trimmed chrome, relative paths.
+     * Same data and counts as the dev report; presentation only.
+     */
+    public function isClientReport(): bool
+    {
+        return (bool) ($this->config['report_client'] ?? false);
+    }
+
+    /**
+     * @param list<string> $paths
+     * @param array<string, mixed> $config
+     * @param list<string> $only
+     * @param list<string> $exclude
+     */
+    public function __construct(
+        string $basePath,
+        array $paths,
+        array $config,
+        string $outputDir,
+        bool $noCache = false,
+        bool $ci = false,
+        bool $quiet = false,
+        string $packageVersion = '0.0.0',
+        string $failOn = 'error',
+        array $only = [],
+        array $exclude = [],
+        string $tier = 'quality',
+        string $minConfidence = 'low',
+        bool $noAutoInstall = false,
+        string $minSeverity = 'info',
+    ) {
+        $this->basePath = rtrim($basePath, '/\\');
+        $this->paths = array_values(array_filter($paths, static fn ($p): bool => is_string($p) && $p !== ''));
+        $this->config = $config;
+        $this->outputDir = $outputDir;
+        $this->noCache = $noCache;
+        $this->noAutoInstall = $noAutoInstall;
+        $this->ci = $ci;
+        $this->quiet = $quiet;
+        $this->packageVersion = $packageVersion;
+        $this->failOn = $failOn;
+        $this->only = $only;
+        $this->exclude = $exclude;
+        $this->tier = $tier;
+        $this->minConfidence = $minConfidence;
+        $this->minSeverity = $minSeverity;
+    }
+
+    /**
+     * Resolve a path to an absolute filesystem path.
+     */
+    public function resolvePath(string $path): string
+    {
+        if ($this->isAbsolute($path)) {
+            return $path;
+        }
+
+        return $this->basePath . DIRECTORY_SEPARATOR . $path;
+    }
+
+    public function configFor(string $key, array $default = []): array
+    {
+        $value = $this->config[$key] ?? null;
+
+        return is_array($value) ? array_merge($default, $value) : $default;
+    }
+
+    private function isAbsolute(string $path): bool
+    {
+        if ($path === '') {
+            return false;
+        }
+
+        if (DIRECTORY_SEPARATOR === '/' && str_starts_with($path, '/')) {
+            return true;
+        }
+
+        if (preg_match('/^[A-Za-z]:[\\\\\\/]/', $path) === 1) {
+            return true;
+        }
+
+        return str_starts_with($path, '\\\\');
+    }
+}

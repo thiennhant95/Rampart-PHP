@@ -1,0 +1,1148 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Rampart\Php\Tests\Unit;
+
+use PHPUnit\Framework\TestCase;
+use Rampart\Php\Analyzers\Security\DisabledCsrfAnalyzer;
+use Rampart\Php\Analyzers\Security\HardcodedSecretAnalyzer;
+use Rampart\Php\Analyzers\Security\InsecureCookieAnalyzer;
+use Rampart\Php\Analyzers\Security\InsecureHashAnalyzer;
+use Rampart\Php\Analyzers\Security\LaravelTaintAnalyzer;
+use Rampart\Php\Analyzers\Security\MassAssignmentAnalyzer;
+use Rampart\Php\Analyzers\Security\ObfuscatedAnalyzer;
+use Rampart\Php\Analyzers\Security\SqlInjectionAnalyzer;
+use Rampart\Php\Analyzers\Security\UnsafeDeserializationAnalyzer;
+use Rampart\Php\Analyzers\Security\UnsafeEvalAnalyzer;
+use Rampart\Php\Result\Issue;
+use Rampart\Php\Result\Severity;
+
+final class SecurityAnalyzersTest extends TestCase
+{
+    /** @var list<string> */
+    private array $tempFiles = [];
+
+    protected function tearDown(): void
+    {
+        foreach ($this->tempFiles as $file) {
+            if ($file !== '' && file_exists($file)) {
+                @unlink($file);
+            }
+        }
+        $this->tempFiles = [];
+    }
+
+    private function tempPhp(string $content, string $relPath = 'file.php'): string
+    {
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'qc-sec-' . uniqid('', true);
+        $path = $dir . DIRECTORY_SEPARATOR . $relPath;
+        @mkdir(dirname($path), 0777, true);
+        file_put_contents($path, $content);
+        $this->tempFiles[] = $path;
+
+        return $path;
+    }
+
+    private function ruleMatches(Issue $issue, string $rule, Severity $severity): bool
+    {
+        return $issue->rule === $rule && $issue->severity === $severity;
+    }
+
+    /** ObfuscatedAnalyzer */
+
+    public function testObfuscatedFlagsRealEvalBase64(): void
+    {
+        $file = $this->tempPhp("<?php\neval(base64_decode(\$payload));\n");
+        $issues = (new ObfuscatedAnalyzer())->analyze([$file]);
+        self::assertCount(1, $issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'OBFUSCATED_PHP', Severity::Critical));
+    }
+
+    public function testObfuscatedSilentOnPatternNamesInStrings(): void
+    {
+        // Docs/remediation text mentioning eval(base64_decode(...)) or
+        // str_rot13( must not flag: self-scan false positive (P0 noise).
+        $file = $this->tempPhp("<?php\n\$label = 'eval(base64_decode(...))';\n// Search for: eval(, base64_decode(, str_rot13(\n");
+        self::assertSame([], (new ObfuscatedAnalyzer())->analyze([$file]));
+    }
+
+    public function testObfuscatedSilentOnOwnSource(): void
+    {
+        $issues = (new ObfuscatedAnalyzer())->analyze([__DIR__ . '/../../src/Analyzers/Security/ObfuscatedAnalyzer.php']);
+        self::assertSame([], $issues);
+    }
+
+    public function testObfuscatedHexNeedsDensity(): void
+    {
+        // Payload built dynamically so this test file itself carries no
+        // `\xNN` runs for the self-scan to flag (dogfood-clean).
+        $bs = chr(92);
+        $single = $this->tempPhp("<?php\n\$a = \"caf" . $bs . "x41\";\n");
+        self::assertSame([], (new ObfuscatedAnalyzer())->analyze([$single]));
+        $bomLike = $this->tempPhp("<?php\n\$a = \"" . $bs . 'xEF' . $bs . 'xBB' . $bs . "xBF\";\n");
+        self::assertSame([], (new ObfuscatedAnalyzer())->analyze([$bomLike]));
+        $dense = $this->tempPhp("<?php\n\$a = \"" . $bs . 'x65' . $bs . 'x76' . $bs . 'x61' . $bs . "x6c\";\n");
+        $issues = (new ObfuscatedAnalyzer())->analyze([$dense]);
+        self::assertCount(1, $issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'OBFUSCATED_PHP', Severity::Critical));
+    }
+
+    /** SqlInjectionAnalyzer */
+
+    public function testSqlInjectionFlagsConcatWithRequestInput(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse Illuminate\\Support\\Facades\\DB;\nuse Illuminate\\Http\\Request;\n" .
+            "class UserController {\n    public function index(Request \$request) {\n        return DB::select(\"select * from users where id = \" . \$request->input('id'));\n    }\n}\n",
+            'app/Http/Controllers/UserController.php'
+        );
+
+        $issues = (new SqlInjectionAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'SQL_INJECTION', Severity::Critical));
+    }
+
+    public function testSqlInjectionFlagsWhereRawWithTaintedInput(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse Illuminate\\Support\\Facades\\DB;\nuse Illuminate\\Http\\Request;\n" .
+            "class ProductController {\n    public function index(Request \$request) {\n        return DB::table('products')->whereRaw('price > ' . \$request->input('min'))->get();\n    }\n}\n",
+            'app/Http/Controllers/ProductController.php'
+        );
+
+        $issues = (new SqlInjectionAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertSame('SQL_INJECTION', $issues[0]->rule);
+        self::assertSame(Severity::Critical, $issues[0]->severity);
+    }
+
+    public function testSqlInjectionSkipsParameterizedQuery(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse Illuminate\\Support\\Facades\\DB;\nuse Illuminate\\Http\\Request;\n" .
+            "class UserController {\n    public function index(Request \$request) {\n        return DB::table('users')->where('active', '=', true)->where('id', '=', \$request->input('id'))->get();\n    }\n}\n",
+            'app/Http/Controllers/UserController.php'
+        );
+
+        $issues = (new SqlInjectionAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testSqlInjectionFlagsOrderByWithTaintedColumn(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse Illuminate\\Support\\Facades\\DB;\nuse Illuminate\\Http\\Request;\n" .
+            "class ProductController {\n    public function index(Request \$request) {\n        return DB::table('products')->orderBy(\$request->input('sort'))->get();\n    }\n}\n",
+            'app/Http/Controllers/ProductController.php'
+        );
+
+        $issues = (new SqlInjectionAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertSame('SQL_INJECTION', $issues[0]->rule);
+    }
+
+    public function testSqlInjectionSkipsOrderByWithLiteralColumn(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse Illuminate\\Support\\Facades\\DB;\n" .
+            "class ProductController {\n    public function index() {\n        return DB::table('products')->orderBy('created_at')->get();\n    }\n}\n",
+            'app/Http/Controllers/ProductController.php'
+        );
+
+        $issues = (new SqlInjectionAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    /** UnsafeEvalAnalyzer */
+
+    public function testUnsafeEvalFlagsRequestInput(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nuse Illuminate\\Http\\Request;\n" .
+            "class EvalService {\n    public function run(Request \$request): void {\n        eval(\$request->input('code'));\n    }\n}\n",
+            'app/Services/EvalService.php'
+        );
+
+        $issues = (new UnsafeEvalAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_EVAL', Severity::Critical));
+    }
+
+    public function testUnsafeEvalSkipsLiteral(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nclass MathService {\n    public function calc(): int {\n        eval('return 1 + 1;');\n        return 2;\n    }\n}\n",
+            'app/Services/MathService.php'
+        );
+
+        $issues = (new UnsafeEvalAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testUnsafeEvalSkipsPregValidatedExpression(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nclass MathService {\n    public function calc(string \$quantity): float {\n" .
+            "        if (!preg_match('/^[0-9,+\\-*\\/().\\s]+\$/', \$quantity)) {\n            throw new \\InvalidArgumentException('bad');\n        }\n" .
+            "        \$result = eval('return ' . \$quantity . ';');\n        return (float) \$result;\n    }\n}\n",
+            'app/Services/MathService.php'
+        );
+
+        $issues = (new UnsafeEvalAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testUnsafeEvalFlagsCallUserFuncWithInput(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nuse Illuminate\\Http\\Request;\n" .
+            "class ActionService {\n    public function run(Request \$request): void {\n        call_user_func(\$request->input('action'));\n    }\n}\n",
+            'app/Services/ActionService.php'
+        );
+
+        $issues = (new UnsafeEvalAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_EVAL', Severity::Critical));
+    }
+
+    public function testUnsafeEvalSkipsCallUserFuncWithLiteralCallable(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nuse Illuminate\\Http\\Request;\n" .
+            "class ActionService {\n    public function run(Request \$request): void {\n        call_user_func([\$this, 'handle'], \$request->input('x'));\n    }\n    private function handle(string \$x): void {}\n}\n",
+            'app/Services/ActionService.php'
+        );
+
+        $issues = (new UnsafeEvalAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testUnsafeEvalSkipsThisCallbackProperty(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\n" .
+            "class ImportService {\n    /** @var callable */\n    protected \$progressCallback;\n    public function run(): void {\n        if (\$this->progressCallback) {\n            call_user_func(\$this->progressCallback, 1);\n        }\n    }\n}\n",
+            'app/Services/ImportService.php'
+        );
+
+        $issues = (new UnsafeEvalAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testUnsafeEvalStillFlagsDynamicClassCallable(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\n" .
+            "class ViewService {\n    public function show(string \$type, int \$id) {\n        return call_user_func(['App\\\\Models\\\\' . \$type, 'find'], \$id);\n    }\n}\n",
+            'app/Services/ViewService.php'
+        );
+
+        $issues = (new UnsafeEvalAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_EVAL', Severity::Critical));
+    }
+
+    public function testUnsafeEvalSkipsAssertInstanceof(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\n" .
+            "class EmbedService {\n    public function register(object \$adapter): void {\n        \\assert(\$adapter instanceof \\App\\Contracts\\EmbedAdapter);\n    }\n}\n",
+            'app/Services/EmbedService.php'
+        );
+
+        $issues = (new UnsafeEvalAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testUnsafeEvalStillFlagsAssertVariable(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\n" .
+            "class EmbedService {\n    public function register(string \$check): void {\n        \\assert(\$check);\n    }\n}\n",
+            'app/Services/EmbedService.php'
+        );
+
+        $issues = (new UnsafeEvalAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_EVAL', Severity::Critical));
+    }
+
+    public function testUnsafeEvalSkipsAppContainerCallable(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\n" .
+            "function is_active(mixed \$routes): bool {\n    return (bool) call_user_func_array([app('router'), 'is'], (array) \$routes);\n}\n",
+            'app/helpers.php'
+        );
+
+        $issues = (new UnsafeEvalAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testUnsafeEvalStillFlagsAppDynamicCallable(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\n" .
+            "class AlertService {\n    public function fire(string \$name, array \$args): void {\n        call_user_func_array([app('alerts.' . \$name), 'create'], \$args);\n    }\n}\n",
+            'app/Services/AlertService.php'
+        );
+
+        $issues = (new UnsafeEvalAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_EVAL', Severity::Critical));
+    }
+
+    /** HardcodedSecretAnalyzer */
+
+    public function testHardcodedSecretFlagsOpenAiKey(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nclass ApiService {\n    private string \$key = 'sk-ABC12345678901234567890';\n}\n",
+            'app/Services/ApiService.php'
+        );
+
+        $issues = (new HardcodedSecretAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'HARDCODED_SECRET', Severity::Critical));
+    }
+
+    public function testHardcodedSecretSkipsNormalVariable(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nclass GreetingService {\n    private string \$greeting = 'Hello World';\n}\n",
+            'app/Services/GreetingService.php'
+        );
+
+        $issues = (new HardcodedSecretAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testHardcodedSecretSkipsOptionNameConstant(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Console\\Commands;\nclass Install {\n    const OPT_DB_PASSWORD = 'db-password';\n}\n",
+            'app/Console/Commands/Install.php'
+        );
+
+        $issues = (new HardcodedSecretAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testHardcodedSecretSkipsTestFixture(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace Tests\\Support;\nclass WebhookSignerTest {\n    public function data(): array {\n        \$secret = 'whsec_test_secret';\n        return [\$secret];\n    }\n}\n",
+            'tests/Support/WebhookSignerTest.php'
+        );
+
+        $issues = (new HardcodedSecretAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testHardcodedSecretStillFlagsProductionTestMarker(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nclass WebhookService {\n    private string \$secret = 'whsec_aB3x9QwE7rT2yU4iO6pQ8s';\n}\n",
+            'app/Services/WebhookService.php'
+        );
+
+        $issues = (new HardcodedSecretAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'HARDCODED_SECRET', Severity::Critical));
+    }
+
+    public function testHardcodedSecretFlagsPasswordComparison(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nclass AuthController {\n    public function login(string \$username, array \$credentials) {\n        if (\$credentials['password'] == '!S3cretMaster2024#Admin') {\n            return true;\n        }\n        return false;\n    }\n}\n",
+            'app/Http/Controllers/AuthController.php'
+        );
+
+        $issues = (new HardcodedSecretAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'HARDCODED_SECRET', Severity::Critical));
+    }
+
+    public function testHardcodedSecretSkipsPasswordVariableComparison(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nclass AuthController {\n    public function login(object \$user, string \$password) {\n        if (\$user->password === \$password) {\n            return true;\n        }\n        return false;\n    }\n}\n",
+            'app/Http/Controllers/AuthController.php'
+        );
+
+        $issues = (new HardcodedSecretAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testHardcodedSecretFlagsEnvDefaultSecret(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\n\$key = env('PAYMENT_API_KEY', 'aB3x9QwE7rT2yU4iO6p');\n",
+            'config/services.php'
+        );
+
+        $issues = (new HardcodedSecretAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'HARDCODED_SECRET', Severity::Critical));
+    }
+
+    public function testHardcodedSecretSkipsEnvPlaceholderDefault(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\n'url' => env('APP_URL', 'http://localhost'),\n'key' => env('APP_KEY', ''),\n",
+            'config/app.php'
+        );
+
+        $issues = (new HardcodedSecretAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+
+        $file2 = $this->tempPhp(
+            "<?php\n'key' => env('SERVICE_API_KEY', 'changeme12345678'),\n",
+            'config/services.php'
+        );
+
+        self::assertCount(0, (new HardcodedSecretAnalyzer())->analyze([$file2]));
+    }
+
+    /** MassAssignmentAnalyzer */
+
+    public function testMassAssignmentFlagsUnprotectedModel(): void
+    {
+        $controller = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse App\\Models\\Order;\nuse Illuminate\\Http\\Request;\n" .
+            "class OrderController {\n    public function store(Request \$request) {\n        return Order::create(\$request->all());\n    }\n}\n",
+            'app/Http/Controllers/OrderController.php'
+        );
+        $model = $this->tempPhp(
+            "<?php\nnamespace App\\Models;\nclass Order extends \\Illuminate\\Database\\Eloquent\\Model {\n    protected \$guarded = [];\n}\n",
+            'app/Models/Order.php'
+        );
+
+        $issues = (new MassAssignmentAnalyzer())->analyze([$controller, $model]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::Error));
+    }
+
+    public function testMassAssignmentSkipsDefaultGuardedModel(): void
+    {
+        // Framework default $guarded = ['*'] when neither property is
+        // declared: nothing is assignable, so no finding (with evidence).
+        $controller = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse App\\Models\\Order;\nuse Illuminate\\Http\\Request;\n" .
+            "class OrderController {\n    public function store(Request \$request) {\n        return Order::create(\$request->all());\n    }\n}\n",
+            'app/Http/Controllers/OrderController.php'
+        );
+        $model = $this->tempPhp(
+            "<?php\nnamespace App\\Models;\nclass Order extends \\Illuminate\\Database\\Eloquent\\Model {}\n",
+            'app/Models/Order.php'
+        );
+
+        $issues = (new MassAssignmentAnalyzer())->analyze([$controller, $model]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testMassAssignmentFindingCarriesFlowProvenance(): void
+    {
+        // Production decision: the finding carries the full chain payload
+        // (input → sink → model protection → flow trace).
+        $controller = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse App\\Models\\Order;\nuse Illuminate\\Http\\Request;\n" .
+            "class OrderController {\n    public function store(Request \$request) {\n        return Order::create(\$request->all());\n    }\n}\n",
+            'app/Http/Controllers/OrderController.php'
+        );
+        $model = $this->tempPhp(
+            "<?php\nnamespace App\\Models;\nclass Order extends \\Illuminate\\Database\\Eloquent\\Model {\n    protected \$guarded = [];\n}\n",
+            'app/Models/Order.php'
+        );
+
+        $issues = (new MassAssignmentAnalyzer())->analyze([$controller, $model]);
+
+        self::assertNotEmpty($issues);
+        $payload = $issues[0]->metadata['mass_assignment'] ?? null;
+        self::assertIsArray($payload);
+        self::assertSame('exposed', $payload['verdict'] ?? null);
+        self::assertSame('tainted-raw', $payload['input_kind'] ?? null);
+        self::assertSame('create', $payload['sink']['type'] ?? null);
+        self::assertSame('App\\Models\\Order', $payload['sink']['model'] ?? null);
+        self::assertSame('unguarded', $payload['model_protection']['type'] ?? null);
+        self::assertFalse($payload['bypass'] ?? true);
+        self::assertSame('high', $payload['confidence'] ?? null);
+        self::assertNotEmpty($payload['flow'] ?? []);
+    }
+
+    public function testMassAssignmentForceFillCarriesBypassProvenance(): void
+    {
+        $controller = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse App\\Models\\Order;\nuse Illuminate\\Http\\Request;\n" .
+            "class OrderController {\n    public function update(Request \$request, Order \$order) {\n        \$order->forceFill(\$request->all());\n    }\n}\n",
+            'app/Http/Controllers/OrderController.php'
+        );
+
+        $issues = (new MassAssignmentAnalyzer())->analyze([$controller]);
+
+        self::assertNotEmpty($issues);
+        $payload = $issues[0]->metadata['mass_assignment'] ?? null;
+        self::assertIsArray($payload);
+        self::assertSame('exposed', $payload['verdict'] ?? null);
+        self::assertSame('tainted-raw', $payload['input_kind'] ?? null);
+        self::assertTrue($payload['bypass'] ?? false);
+    }
+
+    public function testMassAssignmentSkipsModelWithFillable(): void
+    {
+        $controller = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse App\\Models\\Order;\nuse Illuminate\\Http\\Request;\n" .
+            "class OrderController {\n    public function store(Request \$request) {\n        return Order::create(\$request->all());\n    }\n}\n",
+            'app/Http/Controllers/OrderController.php'
+        );
+        $model = $this->tempPhp(
+            "<?php\nnamespace App\\Models;\nclass Order extends \\Illuminate\\Database\\Eloquent\\Model {\n    protected \$fillable = ['name', 'email'];\n}\n",
+            'app/Models/Order.php'
+        );
+
+        $issues = (new MassAssignmentAnalyzer())->analyze([$controller, $model]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testMassAssignmentReviewsPartiallyGuardedModel(): void
+    {
+        // $guarded = ['id'] is not total protection: raw input still
+        // reaches every other field → REVIEW (Warning/Medium), not silent.
+        $controller = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse App\\Models\\Order;\nuse Illuminate\\Http\\Request;\n" .
+            "class OrderController {\n    public function store(Request \$request) {\n        return Order::create(\$request->all());\n    }\n}\n",
+            'app/Http/Controllers/OrderController.php'
+        );
+        $model = $this->tempPhp(
+            "<?php\nnamespace App\\Models;\nclass Order extends \\Illuminate\\Database\\Eloquent\\Model {\n    protected \$guarded = ['id'];\n}\n",
+            'app/Models/Order.php'
+        );
+
+        $issues = (new MassAssignmentAnalyzer())->analyze([$controller, $model]);
+
+        self::assertCount(1, $issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::Warning));
+        $payload = $issues[0]->metadata['mass_assignment'] ?? null;
+        self::assertIsArray($payload);
+        self::assertSame('review', $payload['verdict'] ?? null);
+        self::assertSame('guarded', $payload['model_protection']['type'] ?? null);
+        self::assertSame(['id'], $payload['model_protection']['fields'] ?? null);
+    }
+
+    public function testMassAssignmentFlagsEmptyGuardedModel(): void
+    {
+        $controller = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse App\\Models\\Order;\nuse Illuminate\\Http\\Request;\n" .
+            "class OrderController {\n    public function store(Request \$request) {\n        return Order::create(\$request->all());\n    }\n}\n",
+            'app/Http/Controllers/OrderController.php'
+        );
+        $model = $this->tempPhp(
+            "<?php\nnamespace App\\Models;\nclass Order extends \\Illuminate\\Database\\Eloquent\\Model {\n    protected \$guarded = [];\n}\n",
+            'app/Models/Order.php'
+        );
+
+        $issues = (new MassAssignmentAnalyzer())->analyze([$controller, $model]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::Error));
+    }
+
+    public function testMassAssignmentFlagsUpdateOrCreate(): void
+    {
+        $controller = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse App\\Models\\Order;\nuse Illuminate\\Http\\Request;\n" .
+            "class OrderController {\n    public function store(Request \$request) {\n        return Order::updateOrCreate(['code' => 'x'], \$request->all());\n    }\n}\n",
+            'app/Http/Controllers/OrderController.php'
+        );
+        $model = $this->tempPhp(
+            "<?php\nnamespace App\\Models;\nclass Order extends \\Illuminate\\Database\\Eloquent\\Model {\n    protected \$guarded = [];\n}\n",
+            'app/Models/Order.php'
+        );
+
+        $issues = (new MassAssignmentAnalyzer())->analyze([$controller, $model]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::Error));
+    }
+
+    public function testMassAssignmentFlagsForceFillWithRequestInput(): void
+    {
+        $controller = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse App\\Models\\Order;\nuse Illuminate\\Http\\Request;\n" .
+            "class OrderController {\n    public function update(Request \$request, Order \$order) {\n        \$order->forceFill(\$request->all());\n        \$order->save();\n    }\n}\n",
+            'app/Http/Controllers/OrderController.php'
+        );
+        $model = $this->tempPhp(
+            "<?php\nnamespace App\\Models;\nclass Order extends \\Illuminate\\Database\\Eloquent\\Model {\n    protected \$fillable = ['name'];\n}\n",
+            'app/Models/Order.php'
+        );
+
+        $issues = (new MassAssignmentAnalyzer())->analyze([$controller, $model]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::Error));
+    }
+
+    public function testMassAssignmentSkipsForceFillWithLiterals(): void
+    {
+        $controller = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse App\\Models\\Order;\n" .
+            "class OrderSeeder {\n    public function run(Order \$order): void {\n        \$order->forceFill(['role' => 'admin']);\n        \$order->save();\n    }\n}\n",
+            'database/seeders/OrderSeeder.php'
+        );
+        $model = $this->tempPhp(
+            "<?php\nnamespace App\\Models;\nclass Order extends \\Illuminate\\Database\\Eloquent\\Model {}\n",
+            'app/Models/Order.php'
+        );
+
+        $issues = (new MassAssignmentAnalyzer())->analyze([$controller, $model]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testMassAssignmentSkipsUnguardInSeeder(): void
+    {
+        $seeder = $this->tempPhp(
+            "<?php\nnamespace Database\\Seeders;\nuse App\\Models\\User;\n" .
+            "class UserSeeder {\n    public function run(): void {\n        User::unguard();\n        User::create(['name' => 'admin']);\n    }\n}\n",
+            'database/seeders/UserSeeder.php'
+        );
+        $model = $this->tempPhp(
+            "<?php\nnamespace App\\Models;\nclass User extends \\Illuminate\\Database\\Eloquent\\Model {}\n",
+            'app/Models/User.php'
+        );
+
+        $issues = (new MassAssignmentAnalyzer())->analyze([$seeder, $model]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testMassAssignmentStillFlagsUnguardInJob(): void
+    {
+        $job = $this->tempPhp(
+            "<?php\nnamespace App\\Jobs;\nuse App\\Models\\User;\n" .
+            "class ImportJob {\n    public function handle(): void {\n        User::unguard();\n        User::create(['name' => 'x']);\n    }\n}\n",
+            'app/Jobs/ImportJob.php'
+        );
+        $model = $this->tempPhp(
+            "<?php\nnamespace App\\Models;\nclass User extends \\Illuminate\\Database\\Eloquent\\Model {}\n",
+            'app/Models/User.php'
+        );
+
+        $issues = (new MassAssignmentAnalyzer())->analyze([$job, $model]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::Error));
+    }
+
+    /** UnsafeDeserializationAnalyzer */
+
+    public function testUnsafeDeserializationFlagsNonLiteral(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nuse Illuminate\\Http\\Request;\n" .
+            "class SessionService {\n    public function hydrate(Request \$request): void {\n        \$payload = unserialize(\$request->input('data'));\n    }\n}\n",
+            'app/Services/SessionService.php'
+        );
+
+        $issues = (new UnsafeDeserializationAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_UNSERIALIZE', Severity::Critical));
+    }
+
+    public function testUnsafeDeserializationSkipsLiteral(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nclass CacheService {\n    public function hydrate(): array {\n        return unserialize('a:1:{s:1:\"a\";i:1;}');\n    }\n}\n",
+            'app/Services/CacheService.php'
+        );
+
+        $issues = (new UnsafeDeserializationAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testUnsafeDeserializationFlagsYamlParse(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nuse Illuminate\\Http\\Request;\n" .
+            "class ImportService {\n    public function run(Request \$request): array {\n        return yaml_parse(\$request->input('doc'));\n    }\n}\n",
+            'app/Services/ImportService.php'
+        );
+
+        $issues = (new UnsafeDeserializationAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_UNSERIALIZE', Severity::Critical));
+    }
+
+    public function testUnsafeDeserializationSkipsAllowedClassesFalse(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nuse Illuminate\\Http\\Request;\n" .
+            "class SessionService {\n    public function hydrate(Request \$request): array {\n        return unserialize(\$request->input('data'), ['allowed_classes' => false]);\n    }\n}\n",
+            'app/Services/SessionService.php'
+        );
+
+        $issues = (new UnsafeDeserializationAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    /** InsecureHashAnalyzer */
+
+    public function testInsecureHashFlagsPasswordContext(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nclass AuthService {\n    public function verify(string \$password): bool {\n        return md5(\$password) === \$this->storedHash;\n    }\n}\n",
+            'app/Services/AuthService.php'
+        );
+
+        $issues = (new InsecureHashAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_HASH', Severity::Warning));
+    }
+
+    public function testInsecureHashSkipsNonCredentialContext(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nclass CacheService {\n    public function fingerprint(string \$payload): string {\n        return md5(\$payload);\n    }\n}\n",
+            'app/Services/CacheService.php'
+        );
+
+        $issues = (new InsecureHashAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testInsecureHashFlagsWeakHashFunction(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nclass AuthService {\n    public function verify(string \$password): bool {\n        return hash('md5', \$password) === \$this->storedHash;\n    }\n}\n",
+            'app/Services/AuthService.php'
+        );
+
+        $issues = (new InsecureHashAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_HASH', Severity::Warning));
+    }
+
+    public function testInsecureHashSkipsStrongHashFunction(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nclass TokenService {\n    public function fingerprint(string \$password): string {\n        return hash('sha256', \$password);\n    }\n}\n",
+            'app/Services/TokenService.php'
+        );
+
+        $issues = (new InsecureHashAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testInsecureHashFlagsMtRandForOtp(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nclass OtpService {\n    public function generate(): int {\n        \$otp = mt_rand(100000, 999999);\n        return \$otp;\n    }\n}\n",
+            'app/Services/OtpService.php'
+        );
+
+        $issues = (new InsecureHashAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_HASH', Severity::Warning));
+    }
+
+    public function testInsecureHashFlagsUniqidForResetToken(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nclass PasswordResetService {\n    public function token(): string {\n        \$resetToken = uniqid('pwd_', true);\n        return \$resetToken;\n    }\n}\n",
+            'app/Services/PasswordResetService.php'
+        );
+
+        $issues = (new InsecureHashAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_HASH', Severity::Warning));
+    }
+
+    public function testInsecureHashSkipsMtRandForLoopCounter(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nclass RetryService {\n    public function attempts(): int {\n        \$tries = mt_rand(1, 5);\n        return \$tries;\n    }\n}\n",
+            'app/Services/RetryService.php'
+        );
+
+        $issues = (new InsecureHashAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testInsecureHashSkipsRandomIntForOtp(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nclass OtpService {\n    public function generate(): int {\n        \$otp = random_int(100000, 999999);\n        return \$otp;\n    }\n}\n",
+            'app/Services/OtpService.php'
+        );
+
+        $issues = (new InsecureHashAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testInsecureHashSkipsHibpKAnonymity(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nclass PasswordBreachService {\n    public function breached(string \$password): bool {\n        \$prefix = strtoupper(substr(sha1(\$password), 0, 5));\n        \$body = file_get_contents('https://api.pwnedpasswords.com/range/' . \$prefix);\n        return str_contains((string) \$body, 'suffix');\n    }\n}\n",
+            'app/Services/PasswordBreachService.php'
+        );
+
+        $issues = (new InsecureHashAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    /** LaravelTaintAnalyzer */
+
+    public function testLaravelTaintFlagsWhereRawInterpolation(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse Illuminate\\Support\\Facades\\DB;\nuse Illuminate\\Http\\Request;\n" .
+            "class ProductController {\n    public function index(Request \$request) {\n        return DB::table('products')->whereRaw('price > ' . \$request->input('min'))->get();\n    }\n}\n",
+            'app/Http/Controllers/ProductController.php'
+        );
+
+        $issues = (new LaravelTaintAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'LARAVEL_TAINT', Severity::Error));
+    }
+
+    public function testLaravelTaintSkipsLiteralWhereRaw(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse Illuminate\\Support\\Facades\\DB;\n" .
+            "class ReportController {\n    public function index() {\n        return DB::table('orders')->whereRaw('count(*) as c')->get();\n    }\n}\n",
+            'app/Http/Controllers/ReportController.php'
+        );
+
+        $issues = (new LaravelTaintAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    /** DisabledCsrfAnalyzer */
+
+    public function testDisabledCsrfFlagsAuthorizeTrue(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Requests;\nclass UpdateUserRequest extends \\Illuminate\\Foundation\\Http\\FormRequest {\n    public function authorize(): bool {\n        return true;\n    }\n}\n",
+            'app/Http/Requests/UpdateUserRequest.php'
+        );
+
+        $issues = (new DisabledCsrfAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'DISABLED_CSRF_AUTHORIZE_TRUE', Severity::Warning));
+    }
+
+    public function testDisabledCsrfFlagsWildcardException(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Middleware;\nclass VerifyCsrfToken {\n    protected \$except = ['*'];\n}\n",
+            'app/Http/Middleware/VerifyCsrfToken.php'
+        );
+
+        $issues = (new DisabledCsrfAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertSame('DISABLED_CSRF_EXCEPTION_STAR', $issues[0]->rule);
+        self::assertSame(Severity::Critical, $issues[0]->severity);
+    }
+
+    public function testDisabledCsrfSkipsSafeAuthorize(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Requests;\nclass UpdateUserRequest extends \\Illuminate\\Foundation\\Http\\FormRequest {\n    public function authorize(): bool {\n        return \\Auth::user()->isAdmin();\n    }\n}\n",
+            'app/Http/Requests/UpdateUserRequest.php'
+        );
+
+        $issues = (new DisabledCsrfAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testDisabledCsrfSkipsScopedException(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Middleware;\nclass VerifyCsrfToken {\n    protected \$except = ['webhook/payment'];\n}\n",
+            'app/Http/Middleware/VerifyCsrfToken.php'
+        );
+
+        $issues = (new DisabledCsrfAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testDisabledCsrfDowngradesApiOnlyException(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Middleware;\nclass VerifyCsrfToken {\n    protected \$except = ['api/*'];\n}\n",
+            'app/Http/Middleware/VerifyCsrfToken.php'
+        );
+
+        $issues = (new DisabledCsrfAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertSame('DISABLED_CSRF_EXCEPTION_STAR', $issues[0]->rule);
+        self::assertSame(Severity::Warning, $issues[0]->severity);
+    }
+
+    public function testMassAssignmentFlagsModelInCustomDirWithConfiguredModelsDirs(): void
+    {
+        $controller = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse App\\Domain\\Shop\\Models\\Product;\nuse Illuminate\\Http\\Request;\n" .
+            "class ShopController {\n    public function store(Request \$request) {\n        return Product::create(\$request->all());\n    }\n}\n",
+            'app/Http/Controllers/ShopController.php'
+        );
+        $model = $this->tempPhp(
+            "<?php\nnamespace App\\Domain\\Shop\\Models;\nclass Product extends \\Illuminate\\Database\\Eloquent\\Model {\n    protected \$guarded = [];\n}\n",
+            'app/Domain/Shop/Models/Product.php'
+        );
+
+        $issues = (new MassAssignmentAnalyzer(['models_dirs' => ['app/Domain/Shop/Models']]))
+            ->analyze([$controller, $model]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::Error));
+    }
+
+    public function testMassAssignmentMissesCustomDirModelWithDefaultOptions(): void
+    {
+        $controller = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse App\\Domain\\Shop\\Models\\Product;\nuse Illuminate\\Http\\Request;\n" .
+            "class ShopController {\n    public function store(Request \$request) {\n        return Product::create(\$request->all());\n    }\n}\n",
+            'app/Http/Controllers/ShopController.php'
+        );
+        $model = $this->tempPhp(
+            "<?php\nnamespace App\\Domain\\Shop\\Models;\nclass Product extends \\Illuminate\\Database\\Eloquent\\Model {}\n",
+            'app/Domain/Shop/Models/Product.php'
+        );
+
+        $issues = (new MassAssignmentAnalyzer())->analyze([$controller, $model]);
+
+        self::assertCount(0, $issues);
+    }
+
+    /** InsecureCookieAnalyzer */
+
+    public function testInsecureCookieFlagsQueueWithoutSecure(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse Illuminate\\Support\\Facades\\Cookie;\n" .
+            "class ThemeController {\n    public function store(): void {\n        Cookie::queue('theme', 'dark', 60);\n    }\n}\n",
+            'app/Http/Controllers/ThemeController.php'
+        );
+
+        $issues = (new InsecureCookieAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_COOKIE', Severity::Warning));
+    }
+
+    public function testInsecureCookieFlagsQueueWithFalseSecure(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse Illuminate\\Support\\Facades\\Cookie;\n" .
+            "class ThemeController {\n    public function store(): void {\n        Cookie::queue('theme', 'dark', 60, null, null, false);\n    }\n}\n",
+            'app/Http/Controllers/ThemeController.php'
+        );
+
+        $issues = (new InsecureCookieAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_COOKIE', Severity::Error));
+    }
+
+    public function testInsecureCookieSkipsQueueWithTrueSecure(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nuse Illuminate\\Support\\Facades\\Cookie;\n" .
+            "class ThemeController {\n    public function store(): void {\n        Cookie::queue('theme', 'dark', 60, null, null, true);\n    }\n}\n",
+            'app/Http/Controllers/ThemeController.php'
+        );
+
+        $issues = (new InsecureCookieAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testInsecureCookieFlagsResponseCookieWithoutSecure(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\n" .
+            "class ThemeController {\n    public function store() {\n        return response()->cookie('theme', 'dark', 60);\n    }\n}\n",
+            'app/Http/Controllers/ThemeController.php'
+        );
+
+        $issues = (new InsecureCookieAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_COOKIE', Severity::Warning));
+    }
+
+    public function testInsecureCookieFlagsHelperWithoutSecure(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\n" .
+            "class ThemeController {\n    public function store() {\n        return cookie('theme', 'dark', 60);\n    }\n}\n",
+            'app/Http/Controllers/ThemeController.php'
+        );
+
+        $issues = (new InsecureCookieAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_COOKIE', Severity::Warning));
+    }
+
+    public function testInsecureCookieSkipsTestPath(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace Tests\\Feature;\nuse Illuminate\\Support\\Facades\\Cookie;\n" .
+            "class CookieTest {\n    public function test_queue(): void {\n        Cookie::queue('theme', 'dark', 60);\n    }\n}\n",
+            'tests/Feature/CookieTest.php'
+        );
+
+        $issues = (new InsecureCookieAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    /** HardcodedSecretAnalyzer identifier constants and evidence */
+
+    public function testHardcodedSecretSkipsIdentifierConstantValue(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Support;\nclass FeatureFlags {\n    public const FEATURE_CLIENT_PORTAL_PASSWORD = 'client_portal_password';\n}\n",
+            'app/Support/FeatureFlags.php'
+        );
+
+        $issues = (new HardcodedSecretAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testHardcodedSecretSkipsPasswordFieldAndResetRouteConsts(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Support;\nclass FieldNames {\n    public const PASSWORD_FIELD = 'password';\n    public const PASSWORD_RESET_ROUTE = 'password.reset';\n}\n",
+            'app/Support/FieldNames.php'
+        );
+
+        $issues = (new HardcodedSecretAnalyzer())->analyze([$file]);
+
+        self::assertCount(0, $issues);
+    }
+
+    public function testHardcodedSecretStillFlagsRealConstSecret(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Support;\nclass Credentials {\n    public const DEFAULT_PASSWORD = 'admin123';\n}\n",
+            'app/Support/Credentials.php'
+        );
+
+        $issues = (new HardcodedSecretAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'HARDCODED_SECRET', Severity::Critical));
+    }
+
+    public function testHardcodedSecretStillFlagsVariableAssignment(): void
+    {
+        $file = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nclass AuthService {\n    public function login(): string {\n        \$password = 'admin123';\n        return \$password;\n    }\n}\n",
+            'app/Services/AuthService.php'
+        );
+
+        $issues = (new HardcodedSecretAnalyzer())->analyze([$file]);
+
+        self::assertNotEmpty($issues);
+        self::assertTrue($this->ruleMatches($issues[0], 'HARDCODED_SECRET', Severity::Critical));
+    }
+
+    public function testHardcodedSecretEvidenceMetadata(): void
+    {
+        $random = $this->tempPhp(
+            "<?php\nnamespace App\\Http\\Controllers;\nclass AuthController {\n    public function login(array \$credentials) {\n        if (\$credentials['password'] == '!S3cretMaster2024#Admin') {\n            return true;\n        }\n        return false;\n    }\n}\n",
+            'app/Http/Controllers/AuthController.php'
+        );
+
+        $issues = (new HardcodedSecretAnalyzer())->analyze([$random]);
+
+        self::assertNotEmpty($issues);
+        self::assertArrayHasKey('kind', $issues[0]->metadata);
+        self::assertArrayHasKey('hint', $issues[0]->metadata);
+        $evidence = $issues[0]->metadata['evidence'] ?? null;
+        self::assertIsArray($evidence);
+        self::assertSame('!S3cretMaster2024#Admin', $evidence['matched'] ?? null);
+        self::assertSame(strlen('!S3cretMaster2024#Admin'), $evidence['length'] ?? null);
+        self::assertGreaterThan(3.0, $evidence['entropy'] ?? 0.0);
+        self::assertNull($evidence['known_prefix'] ?? null);
+        self::assertFalse($evidence['test_fixture'] ?? null);
+
+        $stripe = $this->tempPhp(
+            "<?php\nnamespace App\\Services;\nclass StripeService {\n    private string \$key = 'sk_live_aB3x9QwE7rT2yU4iO6pQ8s';\n}\n",
+            'app/Services/StripeService.php'
+        );
+
+        $stripeIssues = (new HardcodedSecretAnalyzer())->analyze([$stripe]);
+
+        self::assertNotEmpty($stripeIssues);
+        $stripeEvidence = $stripeIssues[0]->metadata['evidence'] ?? null;
+        self::assertIsArray($stripeEvidence);
+        self::assertSame('sk_live_', $stripeEvidence['known_prefix'] ?? null);
+
+        $fixture = $this->tempPhp(
+            "<?php\n\$key = env('PAYMENT_API_KEY', 'whsec_test_secret');\n",
+            'tests/Feature/PaymentTest.php'
+        );
+
+        $fixtureIssues = (new HardcodedSecretAnalyzer())->analyze([$fixture]);
+
+        self::assertNotEmpty($fixtureIssues);
+        $fixtureEvidence = $fixtureIssues[0]->metadata['evidence'] ?? null;
+        self::assertIsArray($fixtureEvidence);
+        self::assertTrue($fixtureEvidence['test_fixture'] ?? null);
+    }
+}
