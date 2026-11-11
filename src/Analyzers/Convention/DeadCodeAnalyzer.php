@@ -55,6 +55,11 @@ final class DeadCodeAnalyzer implements ScanContextAware
         $finder = new CountingNodeFinder();
 
         foreach ($finder->findInstanceOf($ast, Node\Stmt\Class_::class) as $class) {
+            // Abstract classes expose protected helpers to subclasses in other
+            // files; a same-file reference check cannot prove them dead.
+            if ($class->isAbstract()) {
+                continue;
+            }
             foreach ($class->getMethods() as $method) {
                 if (!$this->isCandidate($method)) {
                     continue;
@@ -86,11 +91,13 @@ final class DeadCodeAnalyzer implements ScanContextAware
     }
 
     /**
-     * Only private/protected, non-magic, non-accessor, non-scope methods are candidates.
+     * Only private, non-magic, non-accessor, non-scope methods are candidates.
+     * Protected methods can be called from subclasses in other files, which a
+     * per-file reference check cannot see.
      */
     private function isCandidate(Node\Stmt\ClassMethod $method): bool
     {
-        if ($method->isPublic() || $method->isAbstract()) {
+        if (!$method->isPrivate() || $method->isAbstract()) {
             return false;
         }
 
@@ -120,6 +127,8 @@ final class DeadCodeAnalyzer implements ScanContextAware
             'boot', 'booted', 'initialize', 'register', 'provider', 'map',
             'bootIfNotBooted', 'newQuery', 'newEloquentBuilder', 'newBaseQueryBuilder',
             'serialize', 'unserialize', 'jsonSerialize',
+            'setUp', 'tearDown', 'setUpBeforeClass', 'tearDownAfterClass',
+            'before', 'after', 'beforeExecuteRoute', 'beforeDispatch', 'onConstruct',
         ];
 
         return !in_array($name, $lifecycle, true);

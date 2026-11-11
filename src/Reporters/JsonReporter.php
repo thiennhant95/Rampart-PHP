@@ -22,6 +22,9 @@ final class JsonReporter implements ReporterInterface
             'exit_code' => $ctx->exitCode,
             'overall_status' => $this->overallStatus($results, $ctx->failOn),
             'tier' => $ctx->tier,
+            'framework' => $ctx->frameworkProfile !== null
+                ? ['value' => $ctx->frameworkProfile->framework->value, 'label' => $ctx->frameworkProfile->label]
+                : null,
             'fail_on' => $ctx->failOn,
             'min_confidence' => $ctx->minConfidence,
             'duration_total' => $this->totalDuration($results),

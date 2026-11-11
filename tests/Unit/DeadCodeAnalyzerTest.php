@@ -72,15 +72,13 @@ final class DeadCodeAnalyzerTest extends TestCase
         self::assertSame('unusedHelper', $issues[0]->metadata['method'] ?? null);
     }
 
-    public function testUnreferencedProtectedMethodIsFlagged(): void
+    public function testProtectedMethodIsNotFlaggedBecauseSubclassesMayUseIt(): void
     {
         $issues = $this->analyze([$this->tempPhp(
-            "<?php\nclass Repo\n{\n    protected function neverCalled(): void\n    {\n    }\n}\n"
+            "<?php\nclass Repo\n{\n    protected function neverCalledHere(): void\n    {\n    }\n}\n"
         )]);
 
-        self::assertCount(1, $issues);
-        self::assertSame('DEAD_CODE', $issues[0]->rule);
-        self::assertStringContainsString('neverCalled', $issues[0]->message);
+        self::assertSame([], $issues);
     }
 
     public function testCalledMethodIsNotFlagged(): void

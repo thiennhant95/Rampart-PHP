@@ -351,16 +351,6 @@ parameters:
 			path: src/Analyzers/Security/Taint/TaintEngine.php
 
 		-
-			message: "#^Method Rampart\\\\Php\\\\Analyzers\\\\Security\\\\Taint\\\\TaintEngine\\:\\:isStringInterpolatedTainted\\(\\) has parameter \\$tainted with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: src/Analyzers/Security/Taint/TaintEngine.php
-
-		-
-			message: "#^Method Rampart\\\\Php\\\\Analyzers\\\\Security\\\\Taint\\\\TaintEngine\\:\\:isStringInterpolatedTainted\\(\\) is unused\\.$#"
-			count: 1
-			path: src/Analyzers/Security/Taint/TaintEngine.php
-
-		-
 			message: "#^Method Rampart\\\\Php\\\\Analyzers\\\\Security\\\\Taint\\\\TaintEngine\\:\\:markAssignmentSource\\(\\) has parameter \\$tainted with no value type specified in iterable type array\\.$#"
 			count: 1
 			path: src/Analyzers/Security/Taint/TaintEngine.php

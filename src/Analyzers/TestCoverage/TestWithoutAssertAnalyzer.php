@@ -136,6 +136,18 @@ final class TestWithoutAssertAnalyzer implements ScanContextAware
             }
         }
 
+        // PHPUnit's static assertions (self::assertCount, static::assertSame)
+        // were invisible to the MethodCall-only check.
+        $staticCalls = $finder->findInstanceOf($body, Node\Expr\StaticCall::class);
+        foreach ($staticCalls as $call) {
+            if ($call->name instanceof Node\Identifier) {
+                $name = $call->name->toString();
+                if (strncmp($name, 'assert', strlen('assert')) === 0 || strncmp($name, 'expect', strlen('expect')) === 0) {
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 

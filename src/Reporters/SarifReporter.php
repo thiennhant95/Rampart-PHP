@@ -67,6 +67,7 @@ final class SarifReporter implements ReporterInterface
                     'results' => $sarifResults,
                     'properties' => [
                         'tier' => $ctx->tier,
+                        'framework' => $ctx->frameworkProfile !== null ? $ctx->frameworkProfile->framework->value : null,
                         'fail_on' => $ctx->failOn,
                         'min_confidence' => $ctx->minConfidence,
                         'exit_code' => $ctx->exitCode,
@@ -156,7 +157,7 @@ final class SarifReporter implements ReporterInterface
         $cfg = $ctx->configFor('html');
         $repo = rtrim(trim((string) ($cfg['repo_url'] ?? '')), '/');
         if ($repo === '') {
-            $repo = 'https://github.com/rampart/laravel-checker';
+            $repo = 'https://github.com/thiennhant95/rampart-php';
         }
 
         return $repo;

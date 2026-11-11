@@ -19,15 +19,16 @@ final class MarkdownReporter implements ReporterInterface
         $summary = $this->buildSummary($results);
 
         $lines = [];
-        $lines[] = '# Laravel Quality Report';
+        $lines[] = '# Rampart PHP Quality Report';
         $lines[] = '';
         $lines[] = '<div align="center">';
         $lines[] = '';
-        $lines[] = '*🛡️ Comprehensive quality gate for Laravel — security, tests & conventions*';
+        $lines[] = '*Static quality gate for plain PHP and any framework — security, tests & conventions*';
         $lines[] = '';
         $lines[] = '</div>';
         $lines[] = '';
-        $lines[] = 'Generated: `' . $generatedAt . '` | Package: `' . PackageVersion::label($version) . '` | Tier: `' . $this->esc($ctx->tier) . '` | Fail on: `' . $this->esc($ctx->failOn) . '` | Exit: `' . $ctx->exitCode . '`';
+        $framework = $ctx->frameworkProfile !== null ? $ctx->frameworkProfile->label : 'unknown';
+        $lines[] = 'Generated: `' . $generatedAt . '` | Package: `' . PackageVersion::label($version) . '` | Framework: `' . $this->esc($framework) . '` | Tier: `' . $this->esc($ctx->tier) . '` | Fail on: `' . $this->esc($ctx->failOn) . '` | Exit: `' . $ctx->exitCode . '`';
         $lines[] = '';
         $lines[] = '**Status:** ' . $this->overallStatus($results, $ctx->failOn)
             . ' | **Tier:** ' . $this->esc($ctx->tier)
