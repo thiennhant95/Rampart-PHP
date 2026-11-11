@@ -1,0 +1,8 @@
+title: Rampart PHP
+description: Standalone quality gate for plain PHP and any framework — PHP 7.4+.
+theme: jekyll-theme-minimal
+baseurl: "/Rampart-PHP"
+url: "https://thiennhant95.github.io"
+markdown: kramdown
+show_downloads: false
+lang: en

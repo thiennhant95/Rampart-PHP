@@ -8,7 +8,7 @@
     "support": {
         "issues": "https://github.com/thiennhant95/Rampart-PHP/issues",
         "source": "https://github.com/thiennhant95/Rampart-PHP",
-        "docs": "https://github.com/thiennhant95/Rampart-PHP#readme"
+        "docs": "https://thiennhant95.github.io/Rampart-PHP/"
     },
     "bin": [
         "bin/rampart"
