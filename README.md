@@ -29,7 +29,7 @@ Optional tools (reported as `skipped` when missing): `squizlabs/php_codesniffer`
 ## Install
 
 ```bash
-git clone https://github.com/thiennhant95/rampart-php.git
+git clone https://github.com/thiennhant95/Rampart-PHP.git
 cd rampart-php
 composer install
 ```

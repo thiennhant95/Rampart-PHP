@@ -4,7 +4,12 @@
     "keywords": ["php", "php74", "quality", "security", "static-analysis", "phpcs", "phpstan", "phpunit", "slim", "codeigniter", "fuelphp", "symfony", "phalcon", "ci"],
     "license": "MIT",
     "type": "library",
-    "homepage": "https://github.com/thiennhant95/rampart-php",
+    "homepage": "https://github.com/thiennhant95/Rampart-PHP",
+    "support": {
+        "issues": "https://github.com/thiennhant95/Rampart-PHP/issues",
+        "source": "https://github.com/thiennhant95/Rampart-PHP",
+        "docs": "https://github.com/thiennhant95/Rampart-PHP#readme"
+    },
     "bin": [
         "bin/rampart"
     ],
