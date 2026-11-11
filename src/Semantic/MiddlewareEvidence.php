@@ -14,17 +14,48 @@ final class MiddlewareEvidence
     public const MECHANISM_GATE = 'gate';
 
     public const MECHANISM_ROLE = 'role';
-
-    public function __construct(
-        public readonly string $type,
-        public readonly string $alias,
-        public readonly string $class,
-        public readonly string $method,
-        public readonly string $mechanism,
-        public readonly ?string $ability,
-        public readonly string $source,
-        public readonly string $confidence,
-    ) {
+    /**
+     * @readonly
+     */
+    public string $type;
+    /**
+     * @readonly
+     */
+    public string $alias;
+    /**
+     * @readonly
+     */
+    public string $class;
+    /**
+     * @readonly
+     */
+    public string $method;
+    /**
+     * @readonly
+     */
+    public string $mechanism;
+    /**
+     * @readonly
+     */
+    public ?string $ability;
+    /**
+     * @readonly
+     */
+    public string $source;
+    /**
+     * @readonly
+     */
+    public string $confidence;
+    public function __construct(string $type, string $alias, string $class, string $method, string $mechanism, ?string $ability, string $source, string $confidence)
+    {
+        $this->type = $type;
+        $this->alias = $alias;
+        $this->class = $class;
+        $this->method = $method;
+        $this->mechanism = $mechanism;
+        $this->ability = $ability;
+        $this->source = $source;
+        $this->confidence = $confidence;
     }
 
     /**

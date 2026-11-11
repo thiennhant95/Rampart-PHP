@@ -62,7 +62,7 @@ final class AuthHardeningTest extends TestCase
         $issues = $this->onlyRule((new AuthHardeningAnalyzer())->analyze([$file]), 'SESSION_FIXATION');
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'SESSION_FIXATION', Severity::Warning));
+        self::assertTrue($this->ruleMatches($issues[0], 'SESSION_FIXATION', Severity::$Warning));
         self::assertStringContainsString('store', $issues[0]->message);
         self::assertSame('store', $issues[0]->metadata['function']);
     }
@@ -113,7 +113,7 @@ final class AuthHardeningTest extends TestCase
         $issues = $this->onlyRule((new AuthHardeningAnalyzer())->analyze([$file]), 'WEAK_PASSWORD_POLICY');
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'WEAK_PASSWORD_POLICY', Severity::Warning));
+        self::assertTrue($this->ruleMatches($issues[0], 'WEAK_PASSWORD_POLICY', Severity::$Warning));
     }
 
     public function testWeakPasswordPolicyFlagsShortStringMinRule(): void
@@ -128,7 +128,7 @@ final class AuthHardeningTest extends TestCase
         $issues = $this->onlyRule((new AuthHardeningAnalyzer())->analyze([$file]), 'WEAK_PASSWORD_POLICY');
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'WEAK_PASSWORD_POLICY', Severity::Warning));
+        self::assertTrue($this->ruleMatches($issues[0], 'WEAK_PASSWORD_POLICY', Severity::$Warning));
     }
 
     public function testWeakPasswordPolicyFlagsMissingMinRule(): void
@@ -143,7 +143,7 @@ final class AuthHardeningTest extends TestCase
         $issues = $this->onlyRule((new AuthHardeningAnalyzer())->analyze([$file]), 'WEAK_PASSWORD_POLICY');
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'WEAK_PASSWORD_POLICY', Severity::Warning));
+        self::assertTrue($this->ruleMatches($issues[0], 'WEAK_PASSWORD_POLICY', Severity::$Warning));
     }
 
     public function testWeakPasswordPolicySilentForSufficientMin(): void
@@ -200,7 +200,7 @@ final class AuthHardeningTest extends TestCase
         $issues = $this->onlyRule((new AuthHardeningAnalyzer())->analyze([$file]), 'WEAK_PASSWORD_POLICY');
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'WEAK_PASSWORD_POLICY', Severity::Warning));
+        self::assertTrue($this->ruleMatches($issues[0], 'WEAK_PASSWORD_POLICY', Severity::$Warning));
     }
 
     public function testWeakPasswordPolicyFlagsRulesViaVariable(): void
@@ -215,7 +215,7 @@ final class AuthHardeningTest extends TestCase
         $issues = $this->onlyRule((new AuthHardeningAnalyzer())->analyze([$file]), 'WEAK_PASSWORD_POLICY');
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'WEAK_PASSWORD_POLICY', Severity::Warning));
+        self::assertTrue($this->ruleMatches($issues[0], 'WEAK_PASSWORD_POLICY', Severity::$Warning));
     }
 
     public function testWeakPasswordPolicySkipsCustomMessageKeys(): void

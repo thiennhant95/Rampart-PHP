@@ -180,11 +180,11 @@ final class ModelMetadataIndex implements ScanContextAware
     {
         $normalized = strtolower(str_replace('\\', '/', $file));
 
-        return str_contains($normalized, '/database/seeders/')
-            || str_contains($normalized, '/database/factories/')
-            || str_contains($normalized, '/database/migrations/')
-            || str_contains($normalized, '/tests/')
-            || str_starts_with($normalized, 'tests/');
+        return strpos($normalized, '/database/seeders/') !== false
+            || strpos($normalized, '/database/factories/') !== false
+            || strpos($normalized, '/database/migrations/') !== false
+            || strpos($normalized, '/tests/') !== false
+            || strncmp($normalized, 'tests/', strlen('tests/')) === 0;
     }
 
     private function shortClass(string $class): string

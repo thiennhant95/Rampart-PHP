@@ -29,7 +29,30 @@ final class AccessDecision
     public const EXPOSED = 'exposed';
 
     public const UNKNOWN = 'unknown';
-
+    /**
+     * @readonly
+     */
+    public string $status;
+    /**
+     * @var array{methods: list<string>, uri: (string | null), file: string, line: (int | null)}|null
+     * @readonly
+     */
+    public ?array $route;
+    /**
+     * @var list<string>
+     * @readonly
+     */
+    public array $middleware;
+    /**
+     * @var list<(string | array<string, (string | null)>)>
+     * @readonly
+     */
+    public array $authorizationEvidence;
+    /**
+     * @var list<array{alias: string, class: (string | null), method: (string | null), source: (string | null), mechanism: string}>
+     * @readonly
+     */
+    public array $middlewareResolution = [];
     /**
      * @param array{methods: list<string>, uri: string|null, file: string, line: int|null}|null $route
      * @param list<string> $middleware full inherited stack, outermost first
@@ -38,12 +61,12 @@ final class AccessDecision
      * @param list<array{alias: string, class: string|null, method: string|null, source: string|null, mechanism: string}> $middlewareResolution
      *   resolved-but-unverifiable middleware trail for REVIEW findings
      */
-    public function __construct(
-        public readonly string $status,
-        public readonly ?array $route,
-        public readonly array $middleware,
-        public readonly array $authorizationEvidence,
-        public readonly array $middlewareResolution = [],
-    ) {
+    public function __construct(string $status, ?array $route, array $middleware, array $authorizationEvidence, array $middlewareResolution = [])
+    {
+        $this->status = $status;
+        $this->route = $route;
+        $this->middleware = $middleware;
+        $this->authorizationEvidence = $authorizationEvidence;
+        $this->middlewareResolution = $middlewareResolution;
     }
 }

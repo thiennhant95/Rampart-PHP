@@ -58,9 +58,9 @@ final class DebugOutputAnalyzer extends AbstractAnalyzer
                     sprintf('Debug function %s() is present in shipped code; remove it or gate it behind an explicit debug flag.', $name),
                     $file,
                     $call->getStartLine(),
-                    Severity::Warning,
+                    Severity::$Warning,
                     ['function' => $name],
-                    Confidence::Low
+                    Confidence::$Low
                 );
             }
         }

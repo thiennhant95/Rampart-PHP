@@ -66,9 +66,9 @@ final class HeaderInjectionAnalyzer extends AbstractAnalyzer
                     ),
                     $file,
                     $call->getStartLine(),
-                    Severity::Warning,
+                    Severity::$Warning,
                     ['sink' => $name],
-                    $direct ? Confidence::High : Confidence::Medium
+                    $direct ? Confidence::$High : Confidence::$Medium
                 );
             }
         }

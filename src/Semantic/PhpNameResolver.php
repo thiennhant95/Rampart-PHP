@@ -30,7 +30,7 @@ final class PhpNameResolver
     public static function isRouteFile(string $file): bool
     {
         $normalized = str_replace('\\', '/', $file);
-        if (str_contains($normalized, '/routes/') || str_contains($normalized, '/Routes/')) {
+        if (strpos($normalized, '/routes/') !== false || strpos($normalized, '/Routes/') !== false) {
             return true;
         }
 
@@ -41,8 +41,8 @@ final class PhpNameResolver
 
     public static function isAbsolutePath(string $path): bool
     {
-        return str_starts_with($path, '/')
-            || str_starts_with($path, '\\')
+        return strncmp($path, '/', strlen('/')) === 0
+            || strncmp($path, '\\', strlen('\\')) === 0
             || (bool) preg_match('#^[A-Za-z]:[\\\\/]#', $path);
     }
 
@@ -53,7 +53,7 @@ final class PhpNameResolver
      */
     public static function resolveName(string $name, array $uses, ?string $namespace): string
     {
-        if (str_starts_with($name, '\\')) {
+        if (strncmp($name, '\\', strlen('\\')) === 0) {
             return ltrim($name, '\\');
         }
 

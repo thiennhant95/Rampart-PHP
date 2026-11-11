@@ -19,17 +19,37 @@ final class ValidationEvidence
     public const SOURCE_MAKE = 'validator-make';
 
     public const SOURCE_VALIDATED = 'validated-use';
-
+    /**
+     * @readonly
+     */
+    public string $source;
+    /**
+     * @readonly
+     */
+    public ?string $requestClass;
+    /**
+     * @readonly
+     */
+    public bool $hasRules;
+    /**
+     * @var list<string>|null
+     * @readonly
+     */
+    public ?array $fields;
+    /**
+     * @readonly
+     */
+    public string $confidence;
     /**
      * @param list<string>|null $fields null = validated, fields unknown
      */
-    public function __construct(
-        public readonly string $source,
-        public readonly ?string $requestClass,
-        public readonly bool $hasRules,
-        public readonly ?array $fields,
-        public readonly string $confidence,
-    ) {
+    public function __construct(string $source, ?string $requestClass, bool $hasRules, ?array $fields, string $confidence)
+    {
+        $this->source = $source;
+        $this->requestClass = $requestClass;
+        $this->hasRules = $hasRules;
+        $this->fields = $fields;
+        $this->confidence = $confidence;
     }
 
     /**

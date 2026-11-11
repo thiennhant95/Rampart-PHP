@@ -209,7 +209,7 @@ final class SarifReporter implements ReporterInterface
         $normalizedBase = rtrim(str_replace('\\', '/', $basePath), '/');
         $normalizedFile = str_replace('\\', '/', $file);
 
-        if (str_starts_with($normalizedFile, $normalizedBase . '/')) {
+        if (strncmp($normalizedFile, $normalizedBase . '/', strlen($normalizedBase . '/')) === 0) {
             $normalizedFile = substr($normalizedFile, strlen($normalizedBase) + 1);
         }
 
@@ -234,7 +234,7 @@ final class SarifReporter implements ReporterInterface
             $tags[] = 'owasp';
             $tags[] = 'security';
         }
-        if (str_starts_with($issue->rule, 'TAINT_')) {
+        if (strncmp($issue->rule, 'TAINT_', strlen('TAINT_')) === 0) {
             $tags[] = 'taint';
             $tags[] = 'security';
         }

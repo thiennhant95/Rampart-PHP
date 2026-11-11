@@ -113,7 +113,7 @@ final class InsecureCookieAnalyzer implements ScanContextAware
                     sprintf('%s() sets a cookie with $secure = false, so the cookie is sent over plain HTTP.', $label),
                     $file,
                     $call->getStartLine(),
-                    Severity::Error,
+                    Severity::$Error,
                     'custom',
                     ['function' => $label]
                 );
@@ -124,7 +124,7 @@ final class InsecureCookieAnalyzer implements ScanContextAware
                 sprintf('%s() sets a cookie without an explicit $secure flag and relies on session config - verify session.secure_cookie.', $label),
                 $file,
                 $call->getStartLine(),
-                Severity::Warning,
+                Severity::$Warning,
                 'custom',
                 ['function' => $label]
             );
@@ -158,7 +158,7 @@ final class InsecureCookieAnalyzer implements ScanContextAware
                 sprintf('%s() sets a cookie without the $secure flag; it will be sent over plain HTTP.', $label),
                 $file,
                 $call->getStartLine(),
-                Severity::Warning,
+                Severity::$Warning,
                 'custom',
                 ['function' => $label]
             );
@@ -168,7 +168,7 @@ final class InsecureCookieAnalyzer implements ScanContextAware
                 sprintf('%s() sets $secure = false, so the cookie is sent over plain HTTP.', $label),
                 $file,
                 $call->getStartLine(),
-                Severity::Error,
+                Severity::$Error,
                 'custom',
                 ['function' => $label]
             );
@@ -180,7 +180,7 @@ final class InsecureCookieAnalyzer implements ScanContextAware
                 sprintf('%s() sets a cookie without $httponly = true; JavaScript can read it.', $label),
                 $file,
                 $call->getStartLine(),
-                Severity::Warning,
+                Severity::$Warning,
                 'custom',
                 ['function' => $label]
             );
@@ -190,7 +190,7 @@ final class InsecureCookieAnalyzer implements ScanContextAware
                 sprintf('%s() sets $httponly = false; JavaScript can read the cookie.', $label),
                 $file,
                 $call->getStartLine(),
-                Severity::Warning,
+                Severity::$Warning,
                 'custom',
                 ['function' => $label]
             );
@@ -255,7 +255,7 @@ final class InsecureCookieAnalyzer implements ScanContextAware
     {
         $lower = strtolower($name);
         foreach (self::RECEIVER_SUFFIXES as $suffix) {
-            if (str_ends_with($lower, $suffix)) {
+            if (substr_compare($lower, $suffix, -strlen($suffix)) === 0) {
                 return true;
             }
         }
@@ -306,8 +306,8 @@ final class InsecureCookieAnalyzer implements ScanContextAware
     {
         $normalized = strtolower(str_replace('\\', '/', $path));
 
-        return str_contains($normalized, '/tests/')
-            || str_contains($normalized, '/test/')
-            || str_ends_with($normalized, 'test.php');
+        return strpos($normalized, '/tests/') !== false
+            || strpos($normalized, '/test/') !== false
+            || substr_compare($normalized, 'test.php', -strlen('test.php')) === 0;
     }
 }

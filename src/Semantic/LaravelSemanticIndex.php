@@ -194,7 +194,7 @@ final class LaravelSemanticIndex implements ScanContextAware
                 $routeFiles[] = $file;
                 continue;
             }
-            if (str_ends_with(strtolower(str_replace('\\', '/', $file)), 'serviceprovider.php')) {
+            if (substr_compare(strtolower(str_replace('\\', '/', $file)), 'serviceprovider.php', -strlen('serviceprovider.php')) === 0) {
                 $providerFiles[] = $file;
             }
         }
@@ -654,8 +654,9 @@ final class LaravelSemanticIndex implements ScanContextAware
 
     /**
      * @return list<string> lowercase verbs, empty when unresolvable
+     * @param \PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Expr\StaticCall $node
      */
-    private function matchMethods(Node\Expr\MethodCall|Node\Expr\StaticCall $node): array
+    private function matchMethods($node): array
     {
         $arg = $node->args[0] ?? null;
         if (!$arg instanceof Node\Arg) {
@@ -688,9 +689,10 @@ final class LaravelSemanticIndex implements ScanContextAware
      * @param array<string, Node\Expr\MethodCall> $chain
      * @param list<string> $middlewares
      * @param array<string, string> $uses
+     * @param \PhpParser\Node\Expr\StaticCall|\PhpParser\Node\Expr\MethodCall $call
      */
     private function recordResource(
-        Node\Expr\StaticCall|Node\Expr\MethodCall $call,
+        $call,
         array $chain,
         array $middlewares,
         string $prefix,
@@ -714,7 +716,7 @@ final class LaravelSemanticIndex implements ScanContextAware
         $resolved = $controller;
         if ($controllerArg->value instanceof Node\Expr\ClassConstFetch && $controllerArg->value->class instanceof Node\Name) {
             $resolved = PhpNameResolver::resolveName($controllerArg->value->class->toString(), $uses, $namespace);
-        } elseif ($controllerArg->value instanceof Node\Scalar\String_ && str_contains($controllerArg->value->value, '@')) {
+        } elseif ($controllerArg->value instanceof Node\Scalar\String_ && strpos($controllerArg->value->value, '@') !== false) {
             $resolved = $controller;
         } elseif (
             !$controllerArg->value instanceof Node\Expr\ClassConstFetch
@@ -840,7 +842,7 @@ final class LaravelSemanticIndex implements ScanContextAware
             return [];
         }
         if ($expr instanceof Node\Scalar\String_) {
-            if (str_contains($expr->value, '@')) {
+            if (strpos($expr->value, '@') !== false) {
                 [$class, $method] = explode('@', $expr->value, 2);
                 if ($class === '' || $method === '') {
                     return [];

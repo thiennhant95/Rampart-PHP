@@ -152,10 +152,10 @@ final class MarkdownReporter implements ReporterInterface
                 '| %s | %s | %d | %d | %d | %d | %.2fs |',
                 $this->esc($result->name),
                 $this->esc($result->status),
-                $this->countBySeverity($result, Severity::Critical),
-                $this->countBySeverity($result, Severity::Error),
-                $this->countBySeverity($result, Severity::Warning),
-                $this->countBySeverity($result, Severity::Info),
+                $this->countBySeverity($result, Severity::$Critical),
+                $this->countBySeverity($result, Severity::$Error),
+                $this->countBySeverity($result, Severity::$Warning),
+                $this->countBySeverity($result, Severity::$Info),
                 $result->duration
             );
         }
@@ -357,7 +357,7 @@ final class MarkdownReporter implements ReporterInterface
                 continue;
             }
             foreach ($result->issues as $issue) {
-                if (str_starts_with($issue->rule, 'OWASP_')) {
+                if (strncmp($issue->rule, 'OWASP_', strlen('OWASP_')) === 0) {
                     $counts[$issue->rule] = ($counts[$issue->rule] ?? 0) + 1;
                 }
             }
@@ -403,11 +403,11 @@ final class MarkdownReporter implements ReporterInterface
             $summary['total_issues'] += count($result->issues);
             foreach ($result->issues as $issue) {
                 $severity = $issue->severity;
-                if ($severity === Severity::Critical) {
+                if ($severity === Severity::$Critical) {
                     ++$summary['critical'];
-                } elseif ($severity === Severity::Error) {
+                } elseif ($severity === Severity::$Error) {
                     ++$summary['error'];
-                } elseif ($severity === Severity::Warning) {
+                } elseif ($severity === Severity::$Warning) {
                     ++$summary['warning'];
                 } else {
                     ++$summary['info'];

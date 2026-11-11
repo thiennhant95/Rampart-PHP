@@ -80,10 +80,10 @@ final class EolAnalyzer implements ScanContextAware
                     sprintf('laravel/framework %s is end-of-life since %s — upgrade.', $laravel, $eol),
                     $composer,
                     1,
-                    Severity::Warning,
+                    Severity::$Warning,
                     'custom',
                     ['package' => 'laravel/framework', 'constraint' => $laravel, 'major' => $major, 'eol' => $eol],
-                    Confidence::Medium
+                    Confidence::$Medium
                 );
             }
         }
@@ -95,10 +95,10 @@ final class EolAnalyzer implements ScanContextAware
                     sprintf('php %s is end-of-life since %s — upgrade.', $php, $eol),
                     $composer,
                     1,
-                    Severity::Warning,
+                    Severity::$Warning,
                     'custom',
                     ['package' => 'php', 'constraint' => $php, 'line' => $line, 'eol' => $eol],
-                    Confidence::Medium
+                    Confidence::$Medium
                 );
             }
         }

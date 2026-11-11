@@ -114,7 +114,7 @@ final class AuthHardeningAnalyzer implements ScanContextAware
             }
             $lower = strtolower($name);
             $isLogin = in_array($lower, self::LOGIN_METHODS, true);
-            $isRegeneration = str_contains($lower, 'regenerate');
+            $isRegeneration = strpos($lower, 'regenerate') !== false;
             if (!$isLogin && !$isRegeneration) {
                 continue;
             }
@@ -156,10 +156,10 @@ final class AuthHardeningAnalyzer implements ScanContextAware
                     ),
                     $file,
                     $login->getStartLine(),
-                    Severity::Warning,
+                    Severity::$Warning,
                     'custom',
                     ['function' => $scope['function']],
-                    Confidence::Medium
+                    Confidence::$Medium
                 );
             }
         }
@@ -200,10 +200,10 @@ final class AuthHardeningAnalyzer implements ScanContextAware
                 ),
                 $file,
                 $call->getStartLine(),
-                Severity::Warning,
+                Severity::$Warning,
                 'custom',
                 ['function' => 'min'],
-                Confidence::Medium
+                Confidence::$Medium
             );
         }
 
@@ -240,10 +240,10 @@ final class AuthHardeningAnalyzer implements ScanContextAware
                     ),
                     $file,
                     $item->getStartLine(),
-                    Severity::Warning,
+                    Severity::$Warning,
                     'custom',
                     ['field' => $item->key->value],
-                    Confidence::Medium
+                    Confidence::$Medium
                 );
             }
         }
@@ -363,7 +363,7 @@ final class AuthHardeningAnalyzer implements ScanContextAware
             return $index === 1
                 && $call instanceof Node\Expr\StaticCall
                 && $call->class instanceof Node\Name
-                && str_contains(strtolower($call->class->toString()), 'validator');
+                && strpos(strtolower($call->class->toString()), 'validator') !== false;
         }
 
         return false;
@@ -433,8 +433,9 @@ final class AuthHardeningAnalyzer implements ScanContextAware
     /**
      * Nearest enclosing ClassMethod or Function_; closures do not open a
      * new scope, so calls inside a closure belong to the outer function.
+     * @return \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_|null
      */
-    private function enclosingFunction(Node $node): Node\Stmt\ClassMethod|Node\Stmt\Function_|null
+    private function enclosingFunction(Node $node)
     {
         $parent = $node->getAttribute('parent');
         while ($parent instanceof Node) {
@@ -466,6 +467,6 @@ final class AuthHardeningAnalyzer implements ScanContextAware
     {
         $normalized = strtolower(str_replace('\\', '/', $path));
 
-        return str_contains($normalized, '/tests/');
+        return strpos($normalized, '/tests/') !== false;
     }
 }

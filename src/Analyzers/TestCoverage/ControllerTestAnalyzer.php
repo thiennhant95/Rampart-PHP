@@ -83,10 +83,10 @@ final class ControllerTestAnalyzer implements ScanContextAware
                         ),
                         $file,
                         $method->getStartLine(),
-                        Severity::Info,
+                        Severity::$Info,
                         'custom',
                         ['controller' => $className, 'method' => $methodName],
-                        Confidence::Low
+                        Confidence::$Low
                     );
                 }
             }
@@ -120,8 +120,8 @@ final class ControllerTestAnalyzer implements ScanContextAware
             foreach ($candidates as $candidate) {
                 $candidateBase = '\\' . str_replace('\\', '/', $candidate);
                 if (
-                    str_ends_with(str_replace('\\', '/', $testFile), $candidateBase)
-                    || str_ends_with($testFile, '/' . $candidate)
+                    substr_compare(str_replace('\\', '/', $testFile), $candidateBase, -strlen($candidateBase)) === 0
+                    || substr_compare($testFile, '/' . $candidate, -strlen('/' . $candidate)) === 0
                     || $testFile === $candidate
                 ) {
                     $matches[$testFile] = $body;
@@ -137,7 +137,7 @@ final class ControllerTestAnalyzer implements ScanContextAware
     {
         $normalized = str_replace('\\', '/', $file);
 
-        return str_contains($normalized, '/Controllers/') && str_ends_with($normalized, 'Controller.php');
+        return strpos($normalized, '/Controllers/') !== false && substr_compare($normalized, 'Controller.php', -strlen('Controller.php')) === 0;
     }
 
     private function collectFeatureTestBodies(): array

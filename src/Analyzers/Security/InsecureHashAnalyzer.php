@@ -103,7 +103,7 @@ final class InsecureHashAnalyzer implements ScanContextAware
                     sprintf('%s() is not cryptographically secure and must not generate tokens/OTPs/secrets; use random_int()/random_bytes().', $fnName),
                     $file,
                     $call->getStartLine(),
-                    Severity::Warning,
+                    Severity::$Warning,
                     'custom',
                     ['function' => $fnName]
                 );
@@ -122,7 +122,7 @@ final class InsecureHashAnalyzer implements ScanContextAware
                 sprintf('%s() is used in a password/credential context; use a secure password hash (password_hash/bcrypt/argon2).', $fnName),
                 $file,
                 $call->getStartLine(),
-                Severity::Warning,
+                Severity::$Warning,
                 'custom',
                 ['function' => $fnName]
             );

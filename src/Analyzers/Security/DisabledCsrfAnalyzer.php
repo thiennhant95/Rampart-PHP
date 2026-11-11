@@ -58,7 +58,7 @@ final class DisabledCsrfAnalyzer implements ScanContextAware
                         'FormRequest::authorize() always returns literal true, disabling authorization for this request.',
                         $file,
                         $authorize->getStartLine(),
-                        Severity::Warning,
+                        Severity::$Warning,
                         'custom',
                         ['class' => $this->className($class)]
                     );
@@ -77,7 +77,7 @@ final class DisabledCsrfAnalyzer implements ScanContextAware
                             : 'VerifyCsrfToken::$except contains a broad wildcard pattern ("*"), disabling CSRF protection.',
                         $file,
                         $except->getStartLine(),
-                        $limited ? Severity::Warning : Severity::Critical,
+                        $limited ? Severity::$Warning : Severity::$Critical,
                         'custom',
                         ['class' => $this->className($class)]
                     );
@@ -167,7 +167,7 @@ final class DisabledCsrfAnalyzer implements ScanContextAware
                 continue;
             }
             $value = $item->value;
-            if ($value instanceof Node\Scalar\String_ && str_contains($value->value, '*')) {
+            if ($value instanceof Node\Scalar\String_ && strpos($value->value, '*') !== false) {
                 $patterns[] = $value->value;
             }
         }
@@ -184,7 +184,7 @@ final class DisabledCsrfAnalyzer implements ScanContextAware
     private function isLimitedExclusion(array $patterns): bool
     {
         foreach ($patterns as $pattern) {
-            if ($pattern !== 'api/*' && !str_starts_with($pattern, 'install')) {
+            if ($pattern !== 'api/*' && strncmp($pattern, 'install', strlen('install')) !== 0) {
                 return false;
             }
         }
@@ -195,7 +195,7 @@ final class DisabledCsrfAnalyzer implements ScanContextAware
     private function matches(Node\Name $name, string $target): bool
     {
         $resolved = $name->toString();
-        if ($resolved === $target || str_ends_with($resolved, '\\' . $target)) {
+        if ($resolved === $target || substr_compare($resolved, '\\' . $target, -strlen('\\' . $target)) === 0) {
             return true;
         }
 

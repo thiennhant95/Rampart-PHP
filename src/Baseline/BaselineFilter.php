@@ -93,7 +93,10 @@ final class BaselineFilter
         return $this->baselinedCount;
     }
 
-    private function issueList(mixed $result): ?array
+    /**
+     * @param mixed $result
+     */
+    private function issueList($result): ?array
     {
         if (is_array($result)) {
             return isset($result['issues']) && is_array($result['issues']) ? $result['issues'] : null;
@@ -106,7 +109,10 @@ final class BaselineFilter
         return null;
     }
 
-    private function setIssues(mixed &$result, array $issues): void
+    /**
+     * @param mixed $result
+     */
+    private function setIssues(&$result, array $issues): void
     {
         if (is_array($result)) {
             $result['issues'] = $issues;
@@ -119,7 +125,10 @@ final class BaselineFilter
         }
     }
 
-    private function setStatus(mixed &$result, string $status): void
+    /**
+     * @param mixed $result
+     */
+    private function setStatus(&$result, string $status): void
     {
         if (is_array($result)) {
             $result['status'] = $status;

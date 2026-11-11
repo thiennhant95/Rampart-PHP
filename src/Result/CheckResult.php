@@ -6,19 +6,27 @@ namespace Rampart\Php\Result;
 
 final class CheckResult
 {
+    public string $name;
+    public string $status;
+    public float $duration;
+    /**
+     * @var Issue[]
+     */
+    public array $issues;
+    public ?string $rawOutput;
+    public ?string $summary;
     /**
      * @param Issue[] $issues
      */
-    public function __construct(
-        public string $name,
-        public string $status,
-        public float $duration,
-        public array $issues,
-        public ?string $rawOutput,
-        public ?string $summary,
-    ) {
+    public function __construct(string $name, string $status, float $duration, array $issues, ?string $rawOutput, ?string $summary)
+    {
+        $this->name = $name;
+        $this->status = $status;
+        $this->duration = $duration;
+        $this->issues = $issues;
+        $this->rawOutput = $rawOutput;
+        $this->summary = $summary;
     }
-
     public function toArray(): array
     {
         return [
@@ -40,13 +48,6 @@ final class CheckResult
             }
         }
 
-        return new self(
-            (string) ($data['name'] ?? 'unknown'),
-            (string) ($data['status'] ?? 'skipped'),
-            (float) ($data['duration'] ?? 0.0),
-            $issues,
-            isset($data['raw_output']) && $data['raw_output'] !== null ? (string) $data['raw_output'] : null,
-            isset($data['summary']) && $data['summary'] !== null ? (string) $data['summary'] : null,
-        );
+        return new self((string) ($data['name'] ?? 'unknown'), (string) ($data['status'] ?? 'skipped'), (float) ($data['duration'] ?? 0.0), $issues, isset($data['raw_output']) && $data['raw_output'] !== null ? (string) $data['raw_output'] : null, isset($data['summary']) && $data['summary'] !== null ? (string) $data['summary'] : null);
     }
 }

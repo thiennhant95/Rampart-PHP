@@ -49,7 +49,10 @@ final class JsonOwaspReportTest extends TestCase
             ['app'],
             [],
             $this->tempDir,
-            packageVersion: '0.7.0'
+            false,
+            false,
+            false,
+            '0.7.0'
         );
     }
 
@@ -66,10 +69,10 @@ final class JsonOwaspReportTest extends TestCase
                 'Finding for ' . $rule,
                 'app/Services/Target' . $index . '.php',
                 10 + $index,
-                Severity::Error,
+                Severity::$Error,
                 'custom',
                 [],
-                Confidence::High
+                Confidence::$High
             );
         }
 
@@ -167,10 +170,10 @@ final class JsonOwaspReportTest extends TestCase
                 'Finding for ' . $rule,
                 'app/Services/Target' . $index . '.php',
                 10 + $index,
-                Severity::Error,
+                Severity::$Error,
                 'custom',
                 [],
-                Confidence::High
+                Confidence::$High
             );
         }
         $results = [new CheckResult('custom', 'failed', 0.5, $issues, null, '')];

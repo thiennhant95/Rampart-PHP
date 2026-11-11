@@ -22,11 +22,16 @@ final class FileEntry
 
     /** @var list<\PhpParser\Node>|null */
     public ?array $ast = null;
-
-    public function __construct(
-        public readonly string $path,
-        public string $source = '',
-        public string $state = self::NOT_LOADED,
-    ) {
+    /**
+     * @readonly
+     */
+    public string $path;
+    public string $source = '';
+    public string $state = self::NOT_LOADED;
+    public function __construct(string $path, string $source = '', string $state = self::NOT_LOADED)
+    {
+        $this->path = $path;
+        $this->source = $source;
+        $this->state = $state;
     }
 }

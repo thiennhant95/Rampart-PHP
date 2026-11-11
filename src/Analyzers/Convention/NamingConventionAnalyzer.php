@@ -58,13 +58,13 @@ final class NamingConventionAnalyzer implements ScanContextAware
                 continue;
             }
 
-            if (str_contains($normalized, '/Controllers/') && !str_ends_with($className, 'Controller')) {
+            if (strpos($normalized, '/Controllers/') !== false && substr_compare($className, 'Controller', -strlen('Controller')) !== 0) {
                 $issues[] = $this->issue($file, $class, sprintf('Controller class "%s" must end with "Controller".', $className));
             }
-            if (str_contains($normalized, '/Services/') && !str_ends_with($className, 'Service')) {
+            if (strpos($normalized, '/Services/') !== false && substr_compare($className, 'Service', -strlen('Service')) !== 0) {
                 $issues[] = $this->issue($file, $class, sprintf('Service class "%s" must end with "Service".', $className));
             }
-            if (str_contains($normalized, '/Repositories/') && !str_ends_with($className, 'Repository')) {
+            if (strpos($normalized, '/Repositories/') !== false && substr_compare($className, 'Repository', -strlen('Repository')) !== 0) {
                 $issues[] = $this->issue($file, $class, sprintf('Repository class "%s" must end with "Repository".', $className));
             }
 
@@ -80,7 +80,7 @@ final class NamingConventionAnalyzer implements ScanContextAware
                 $methodName = lcfirst($methodName);
 
                 foreach (self::BOOL_PREFIXES as $prefix) {
-                    if (str_starts_with($methodName, $prefix) && !$this->declaredReturnBool($method)) {
+                    if (strncmp($methodName, $prefix, strlen($prefix)) === 0 && !$this->declaredReturnBool($method)) {
                         $issues[] = $this->issue(
                             $file,
                             $method,
@@ -131,7 +131,7 @@ final class NamingConventionAnalyzer implements ScanContextAware
         }
 
         $rootNormalized = str_replace('\\', '/', rtrim($root, '/')) . '/';
-        if (!str_starts_with($normalized, $rootNormalized)) {
+        if (strncmp($normalized, $rootNormalized, strlen($rootNormalized)) !== 0) {
             return null;
         }
 
@@ -145,10 +145,10 @@ final class NamingConventionAnalyzer implements ScanContextAware
             $message,
             $file,
             $node->getStartLine(),
-            Severity::Info,
+            Severity::$Info,
             'custom',
             [],
-            Confidence::Low
+            Confidence::$Low
         );
     }
 

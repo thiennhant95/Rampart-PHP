@@ -100,11 +100,11 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
         }
         $normalized = strtolower(str_replace('\\', '/', $path));
 
-        return !str_contains($normalized, '/tests/')
-            && !str_contains($normalized, '/vendor/')
-            && !str_contains($normalized, '/database/seeders/')
-            && !str_contains($normalized, '/database/factories/')
-            && !str_contains($normalized, '/database/migrations/');
+        return strpos($normalized, '/tests/') === false
+            && strpos($normalized, '/vendor/') === false
+            && strpos($normalized, '/database/seeders/') === false
+            && strpos($normalized, '/database/factories/') === false
+            && strpos($normalized, '/database/migrations/') === false;
     }
 
     /**
@@ -155,7 +155,7 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
             return false;
         }
 
-        return str_ends_with($class->name->toString(), 'Controller');
+        return substr_compare($class->name->toString(), 'Controller', -strlen('Controller')) === 0;
     }
 
     /**
@@ -224,13 +224,14 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
      * @param list<string> $middleware
      * @param array<string, array{kind: string, detail: string, line: int|null}> $requestVars
      * @param array{kind: string, detail: string}|null $principal
+     * @param \PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Expr\StaticCall $sink
      */
     private function evaluateSink(
         string $file,
         string $controller,
         string $methodName,
         Node\Stmt\ClassMethod $method,
-        Node\Expr\MethodCall|Node\Expr\StaticCall $sink,
+        $sink,
         array $routes,
         array $middleware,
         array $requestVars,
@@ -298,24 +299,7 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
             ];
         }
 
-        return new OwnershipDecision(
-            $status,
-            $controller,
-            $methodName,
-            $file,
-            $sinkLine,
-            $routeRef,
-            $middleware,
-            $identifier,
-            $lookup,
-            ['kind' => 'sensitive-write', 'detail' => $opName],
-            $principal,
-            $ownershipEvidence,
-            $authorizationEvidence,
-            $confidence,
-            $trace,
-            $reason,
-        );
+        return new OwnershipDecision($status, $controller, $methodName, $file, $sinkLine, $routeRef, $middleware, $identifier, $lookup, ['kind' => 'sensitive-write', 'detail' => $opName], $principal, $ownershipEvidence, $authorizationEvidence, $confidence, $trace, $reason);
     }
 
     /**
@@ -343,12 +327,13 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
      * @param array{kind: string, detail: string, line: int|null}|null $identifier
      * @param array{kind: string, detail: string, line: int|null}|null $lookup
      * @param array{kind: string, detail: string}|null $principal
+     * @param \PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Expr\StaticCall $sink
      */
     private function reviewReason(
         string $controller,
         array $middleware,
         Node\Stmt\ClassMethod $method,
-        Node\Expr\MethodCall|Node\Expr\StaticCall $sink,
+        $sink,
         ?array $identifier,
         ?array $lookup,
         ?array $principal
@@ -357,11 +342,11 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
             return 'AUTHORIZATION_AFTER_SINK';
         }
         $short = strtolower((string) substr($controller, (int) strrpos($controller, '\\') + 1));
-        if (str_starts_with($short, 'admin')) {
+        if (strncmp($short, 'admin', strlen('admin')) === 0) {
             return 'ADMIN_CONTEXT';
         }
         foreach ($middleware as $item) {
-            if (str_contains(strtolower($item), 'admin')) {
+            if (strpos(strtolower($item), 'admin') !== false) {
                 return 'ADMIN_CONTEXT';
             }
         }
@@ -387,7 +372,7 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
         $found = $this->finder()->find($method->stmts ?? [], static function (Node $node): bool {
             if ($node instanceof Node\Expr\StaticCall && $node->class instanceof Node\Name) {
                 $class = strtolower(ltrim($node->class->toString(), '\\'));
-                if (($class === 'gate' || str_ends_with($class, '\\gate')) && $node->name instanceof Node\Identifier) {
+                if (($class === 'gate' || substr_compare($class, '\\gate', -strlen('\\gate')) === 0) && $node->name instanceof Node\Identifier) {
                     return in_array(strtolower($node->name->toString()), ['allows', 'authorize', 'check', 'any', 'denies'], true);
                 }
 
@@ -554,7 +539,7 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
 
         $type = strtolower(ltrim($type, '\\'));
 
-        return str_contains($type, 'repository') || str_contains($type, 'service');
+        return strpos($type, 'repository') !== false || strpos($type, 'service') !== false;
     }
 
     /**
@@ -602,7 +587,7 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
         $found = $this->finder()->find($method->stmts ?? [], static function (Node $node): bool {
             if ($node instanceof Node\Expr\StaticCall && $node->class instanceof Node\Name) {
                 $class = strtolower(ltrim($node->class->toString(), '\\'));
-                if (($class === 'auth' || str_ends_with($class, '\\auth')) && $node->name instanceof Node\Identifier) {
+                if (($class === 'auth' || substr_compare($class, '\\auth', -strlen('\\auth')) === 0) && $node->name instanceof Node\Identifier) {
                     return in_array(strtolower($node->name->toString()), ['user', 'id', 'check'], true);
                 }
             }
@@ -630,9 +615,10 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
      *
      * @param array<string, array{kind: string, detail: string, line: int|null}> $requestVars
      * @return array{kind: string, detail: string, line: int|null}|null
+     * @param \PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Expr\StaticCall $sink
      */
     private function findIdentifier(
-        Node\Expr\MethodCall|Node\Expr\StaticCall $sink,
+        $sink,
         Node\Stmt\ClassMethod $method,
         array $requestVars
     ): ?array {
@@ -735,9 +721,10 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
      * Best-effort lookup classification (structural, no guessing).
      *
      * @return array{kind: string, detail: string, line: int|null}|null
+     * @param \PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Expr\StaticCall $sink
      */
     private function classifyLookup(
-        Node\Expr\MethodCall|Node\Expr\StaticCall $sink,
+        $sink,
         Node\Stmt\ClassMethod $method
     ): ?array {
         $chain = [$sink, ...$this->receiverChain($sink)];
@@ -788,11 +775,12 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
      * @param array{kind: string, detail: string}|null $principal
      * @param list<string> $middleware
      * @return list<array{mechanism: string, detail: string, confidence: string}>
+     * @param \PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Expr\StaticCall $sink
      */
     private function ownershipEvidence(
         string $file,
         Node\Stmt\ClassMethod $method,
-        Node\Expr\MethodCall|Node\Expr\StaticCall $sink,
+        $sink,
         array $requestVars,
         ?array $principal,
         array $middleware,
@@ -842,10 +830,11 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
      *
      * @param list<string> $middleware
      * @return list<array{mechanism: string, detail: string, confidence: string}>
+     * @param \PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Expr\StaticCall $sink
      */
     private function authorizationEvidence(
         Node\Stmt\ClassMethod $method,
-        Node\Expr\MethodCall|Node\Expr\StaticCall $sink,
+        $sink,
         array $middleware
     ): array {
         $evidence = [];
@@ -864,7 +853,7 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
         $found = $this->finder()->find($stmts, static function (Node $node): bool {
             if ($node instanceof Node\Expr\StaticCall && $node->class instanceof Node\Name) {
                 $class = strtolower(ltrim($node->class->toString(), '\\'));
-                if (($class === 'gate' || str_ends_with($class, '\\gate')) && $node->name instanceof Node\Identifier) {
+                if (($class === 'gate' || substr_compare($class, '\\gate', -strlen('\\gate')) === 0) && $node->name instanceof Node\Identifier) {
                     return in_array(strtolower($node->name->toString()), ['allows', 'authorize', 'check', 'any', 'denies'], true);
                 }
 
@@ -918,7 +907,7 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
         if ($root instanceof Node\Expr\StaticCall && $root->class instanceof Node\Name) {
             $class = strtolower(ltrim($root->class->toString(), '\\'));
 
-            return $class === 'auth' || str_ends_with($class, '\\auth');
+            return $class === 'auth' || substr_compare($class, '\\auth', -strlen('\\auth')) === 0;
         }
         if ($root instanceof Node\Expr\FuncCall && $root->name instanceof Node\Name) {
             return strtolower($root->name->toString()) === 'auth';
@@ -938,7 +927,7 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
             if ($root->var instanceof Node\Expr\StaticCall && $root->var->class instanceof Node\Name) {
                 $class = strtolower(ltrim($root->var->class->toString(), '\\'));
 
-                return $class === 'auth' || str_ends_with($class, '\\auth');
+                return $class === 'auth' || substr_compare($class, '\\auth', -strlen('\\auth')) === 0;
             }
 
             return false;
@@ -958,7 +947,9 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
         while ($current instanceof Node\Expr\MethodCall || $current instanceof Node\Expr\NullsafeMethodCall) {
             if ($current->name instanceof Node\Identifier) {
                 $name = strtolower($current->name->toString());
-                if (!in_array($name, [...self::NON_RELATION_METHODS, ...self::SENSITIVE_OPS, 'where', 'find', 'findorfail', 'first', 'get'], true)) {
+                $item0Unpacked = self::NON_RELATION_METHODS;
+                $item1Unpacked = self::SENSITIVE_OPS;
+                if (!in_array($name, array_merge($item0Unpacked, $item1Unpacked, ['where', 'find', 'findorfail', 'first', 'get']), true)) {
                     return true;
                 }
             }
@@ -998,7 +989,7 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
             $column = strtolower($col->value->value);
             $owned = false;
             foreach (self::OWNER_COLUMNS as $ownerCol) {
-                if ($column === $ownerCol || str_ends_with($column, '.' . $ownerCol)) {
+                if ($column === $ownerCol || substr_compare($column, '.' . $ownerCol, -strlen('.' . $ownerCol)) === 0) {
                     $owned = true;
                     break;
                 }
@@ -1042,7 +1033,7 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
         // $user->id, $authUser->id, $userId-ish variables.
         if ($expr instanceof Node\Expr\StaticCall && $expr->class instanceof Node\Name && $expr->name instanceof Node\Identifier) {
             $class = strtolower(ltrim($expr->class->toString(), '\\'));
-            if (($class === 'auth' || str_ends_with($class, '\\auth')) && strtolower($expr->name->toString()) === 'id') {
+            if (($class === 'auth' || substr_compare($class, '\\auth', -strlen('\\auth')) === 0) && strtolower($expr->name->toString()) === 'id') {
                 return true;
             }
         }
@@ -1127,7 +1118,8 @@ final class OwaspOwnershipAnalyzer extends AbstractAnalyzer
         // principal id on the other side (either side counts — the
         // comparison links owner attribute to principal).
         if ($expr instanceof Node\Expr\PropertyFetch && $expr->name instanceof Node\Identifier) {
-            return in_array(strtolower($expr->name->toString()), [...self::OWNER_COLUMNS, 'id'], true);
+            $item0Unpacked = self::OWNER_COLUMNS;
+            return in_array(strtolower($expr->name->toString()), array_merge($item0Unpacked, ['id']), true);
         }
         if ($expr instanceof Node\Expr\MethodCall && $expr->name instanceof Node\Identifier) {
             return strtolower($expr->name->toString()) === 'id';

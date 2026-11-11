@@ -42,8 +42,8 @@ final class OwaspBladeXssAnalyzerTest extends TestCase
 
         self::assertCount(1, $issues);
         self::assertSame('OWASP_BLADE_XSS', $issues[0]->rule);
-        self::assertSame(Severity::Warning, $issues[0]->severity);
-        self::assertSame(Confidence::Medium, $issues[0]->confidence);
+        self::assertSame(Severity::$Warning, $issues[0]->severity);
+        self::assertSame(Confidence::$Medium, $issues[0]->confidence);
     }
 
     public function testFlagsRequestHelper(): void
@@ -57,8 +57,8 @@ final class OwaspBladeXssAnalyzerTest extends TestCase
 
         self::assertCount(1, $issues);
         self::assertSame('OWASP_BLADE_XSS', $issues[0]->rule);
-        self::assertSame(Severity::Error, $issues[0]->severity);
-        self::assertSame(Confidence::High, $issues[0]->confidence);
+        self::assertSame(Severity::$Error, $issues[0]->severity);
+        self::assertSame(Confidence::$High, $issues[0]->confidence);
     }
 
     public function testSkipsCsrfField(): void
@@ -522,8 +522,8 @@ final class OwaspBladeXssAnalyzerTest extends TestCase
 
         self::assertCount(1, $issues);
         self::assertSame('OWASP_BLADE_XSS', $issues[0]->rule);
-        self::assertSame(Severity::Error, $issues[0]->severity);
-        self::assertSame(Confidence::High, $issues[0]->confidence);
+        self::assertSame(Severity::$Error, $issues[0]->severity);
+        self::assertSame(Confidence::$High, $issues[0]->confidence);
     }
 
     public function testPlainVariableEchoIsWarningMedium(): void
@@ -537,8 +537,8 @@ final class OwaspBladeXssAnalyzerTest extends TestCase
 
         self::assertCount(1, $issues);
         self::assertSame('OWASP_BLADE_XSS', $issues[0]->rule);
-        self::assertSame(Severity::Warning, $issues[0]->severity);
-        self::assertSame(Confidence::Medium, $issues[0]->confidence);
+        self::assertSame(Severity::$Warning, $issues[0]->severity);
+        self::assertSame(Confidence::$Medium, $issues[0]->confidence);
     }
 
 /**

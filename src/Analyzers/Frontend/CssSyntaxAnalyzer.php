@@ -47,7 +47,7 @@ final class CssSyntaxAnalyzer implements ScanContextAware
     public function supports(string $path): bool
     {
         $lower = strtolower(str_replace('\\', '/', $path));
-        if (str_contains($lower, '.min.') || str_contains($lower, '/vendor/') || str_contains($lower, '/node_modules/')) {
+        if (strpos($lower, '.min.') !== false || strpos($lower, '/vendor/') !== false || strpos($lower, '/node_modules/') !== false) {
             return false;
         }
         $ext = strtolower((string) pathinfo($path, PATHINFO_EXTENSION));
@@ -72,10 +72,10 @@ final class CssSyntaxAnalyzer implements ScanContextAware
                 $braceError,
                 $file,
                 1,
-                Severity::Warning,
+                Severity::$Warning,
                 'custom',
                 ['kind' => 'css_brace'],
-                Confidence::Medium
+                Confidence::$Medium
             );
         }
 
@@ -86,10 +86,10 @@ final class CssSyntaxAnalyzer implements ScanContextAware
                 $semiError,
                 $file,
                 1,
-                Severity::Info,
+                Severity::$Info,
                 'custom',
                 ['kind' => 'css_semicolon'],
-                Confidence::Low
+                Confidence::$Low
             );
         }
 
@@ -154,7 +154,7 @@ final class CssSyntaxAnalyzer implements ScanContextAware
         if (preg_match('/:[^;{}]*\s*}/', $code, $m) === 1) {
             // Ensure it's not a nested rule like "&:hover {"
             $sample = trim($m[0]);
-            if (str_contains($sample, ':') && !str_contains($sample, '{')) {
+            if (strpos($sample, ':') !== false && strpos($sample, '{') === false) {
                 return 'Possible missing `;` before `}` (e.g. `color: red }`).';
             }
         }

@@ -44,20 +44,20 @@ final class ReportersTest extends TestCase
                     'Tainted input flows into select().',
                     'app/Http/Controllers/UserController.php',
                     14,
-                    Severity::Critical,
+                    Severity::$Critical,
                     'custom',
                     [],
-                    Confidence::High
+                    Confidence::$High
                 ),
                 new Issue(
                     'TODO_FIXME',
                     'Leftover TODO marker.',
                     'app/Services/OrderService.php',
                     3,
-                    Severity::Info,
+                    Severity::$Info,
                     'custom',
                     [],
-                    Confidence::Low
+                    Confidence::$Low
                 ),
             ], null, '2 issues'),
             new CheckResult('phpcs', 'passed', 1.25, [], null, null),
@@ -74,7 +74,10 @@ final class ReportersTest extends TestCase
             ['app'],
             [],
             $this->tempDir,
-            packageVersion: '1.0.0'
+            false,
+            false,
+            false,
+            '1.0.0'
         );
     }
 
@@ -187,7 +190,7 @@ final class ReportersTest extends TestCase
     {
         $results = [
             new CheckResult('custom', 'failed', 0.1, [
-                new Issue('TODO_FIXME', 'Grüße aus München', 'app/X.php', 1, Severity::Info, 'custom'),
+                new Issue('TODO_FIXME', 'Grüße aus München', 'app/X.php', 1, Severity::$Info, 'custom'),
             ], null, null),
         ];
 
@@ -259,7 +262,7 @@ final class ReportersTest extends TestCase
     /**
      * @param list<Issue> $issues
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('badgeStates')]
+    /** @dataProvider badgeStates */
     public function testMarkdownBadgeColoursEveryStatus(array $issues, string $status, string $colour): void
     {
         self::assertStringContainsString(
@@ -283,10 +286,10 @@ final class ReportersTest extends TestCase
         );
 
         return [
-            'critical outranks everything' => [[$make(Severity::Critical)], 'critical', 'red'],
-            'error is reported as failed' => [[$make(Severity::Error)], 'failed', 'red'],
-            'warning' => [[$make(Severity::Warning)], 'warning', 'orange'],
-            'info only still passes' => [[$make(Severity::Info)], 'passed', 'brightgreen'],
+            'critical outranks everything' => [[$make(Severity::$Critical)], 'critical', 'red'],
+            'error is reported as failed' => [[$make(Severity::$Error)], 'failed', 'red'],
+            'warning' => [[$make(Severity::$Warning)], 'warning', 'orange'],
+            'info only still passes' => [[$make(Severity::$Info)], 'passed', 'brightgreen'],
             'no issues' => [[], 'passed', 'brightgreen'],
         ];
     }
@@ -317,7 +320,7 @@ final class ReportersTest extends TestCase
     {
         $issues = [];
         for ($i = 1; $i <= 60; ++$i) {
-            $issues[] = new Issue('TODO_FIXME', 'Marker ' . $i, 'app/X.php', $i, Severity::Info, 'custom');
+            $issues[] = new Issue('TODO_FIXME', 'Marker ' . $i, 'app/X.php', $i, Severity::$Info, 'custom');
         }
         $results = [new CheckResult('custom', 'failed', 0.1, $issues, null, null)];
 

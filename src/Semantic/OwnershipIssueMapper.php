@@ -64,7 +64,7 @@ final class OwnershipIssueMapper
                     $identifier
                 ),
                 $decision,
-                $strong ? Confidence::High : Confidence::Medium
+                $strong ? Confidence::$High : Confidence::$Medium
             );
         }
 
@@ -78,7 +78,7 @@ final class OwnershipIssueMapper
                 $identifier
             ),
             $decision,
-            Confidence::Medium
+            Confidence::$Medium
         );
     }
 
@@ -104,7 +104,7 @@ final class OwnershipIssueMapper
             $message,
             $decision->file,
             $decision->line,
-            Severity::Error,
+            Severity::$Error,
             'custom',
             $this->provenanceMetadata($decision),
             $confidence

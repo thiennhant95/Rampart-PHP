@@ -120,7 +120,7 @@ final class PhpstanChecker extends AbstractProcessChecker
                     (string) ($message['message'] ?? ''),
                     $file,
                     isset($message['line']) && $message['line'] !== null ? (int) $message['line'] : null,
-                    Severity::Error,
+                    Severity::$Error,
                     'phpstan',
                     ['ignorable' => (bool) ($message['ignorable'] ?? false)]
                 );
@@ -135,7 +135,7 @@ final class PhpstanChecker extends AbstractProcessChecker
                 continue;
             }
 
-            $issues[] = new Issue('PHPSTAN_ERROR', $error, null, null, Severity::Error, 'phpstan', []);
+            $issues[] = new Issue('PHPSTAN_ERROR', $error, null, null, Severity::$Error, 'phpstan', []);
         }
 
         return $issues;

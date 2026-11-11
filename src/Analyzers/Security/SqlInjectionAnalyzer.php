@@ -97,7 +97,7 @@ final class SqlInjectionAnalyzer extends AbstractAnalyzer
                             : sprintf('Potential SQL injection: tainted input flows into %s().', $method),
                         $file,
                         $call->getStartLine(),
-                        Severity::Critical,
+                        Severity::$Critical,
                         ['method' => $method]
                     );
                     break;
@@ -113,7 +113,7 @@ final class SqlInjectionAnalyzer extends AbstractAnalyzer
         if ($call instanceof Node\Expr\StaticCall && $call->class instanceof Node\Name) {
             $class = $call->class->toString();
 
-            return $class === 'DB' || str_ends_with($class, '\\DB');
+            return $class === 'DB' || substr_compare($class, '\\DB', -strlen('\\DB')) === 0;
         }
 
         if ($call instanceof Node\Expr\MethodCall) {

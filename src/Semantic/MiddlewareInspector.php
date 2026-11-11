@@ -467,7 +467,10 @@ final class MiddlewareInspector implements ScanContextAware
         return $found !== [];
     }
 
-    private function callAbility(Node\Stmt|Node\Expr $node): ?string
+    /**
+     * @param \PhpParser\Node\Stmt|\PhpParser\Node\Expr $node
+     */
+    private function callAbility($node): ?string
     {
         if (
             ($node instanceof Node\Expr\StaticCall || $node instanceof Node\Expr\MethodCall)

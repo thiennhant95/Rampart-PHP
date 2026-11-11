@@ -140,7 +140,7 @@ final class OwaspSsrfAnalyzer extends AbstractAnalyzer
                 sprintf('Potential SSRF: URL derived from user input flows into %s.', $sink),
                 $file,
                 $call->getStartLine(),
-                Severity::Error,
+                Severity::$Error,
                 ['sink' => $sink]
             );
         }
@@ -435,13 +435,13 @@ final class OwaspSsrfAnalyzer extends AbstractAnalyzer
     {
         $isGuard = static function (Node $node): bool {
             if ($node instanceof Node\Expr\FuncCall && $node->name instanceof Node\Name) {
-                return str_contains(strtolower($node->name->toString()), 'sanitiz');
+                return strpos(strtolower($node->name->toString()), 'sanitiz') !== false;
             }
             if (
                 ($node instanceof Node\Expr\MethodCall || $node instanceof Node\Expr\StaticCall)
                 && $node->name instanceof Node\Identifier
             ) {
-                return str_contains(strtolower($node->name->toString()), 'sanitiz');
+                return strpos(strtolower($node->name->toString()), 'sanitiz') !== false;
             }
 
             return false;
@@ -739,7 +739,7 @@ final class OwaspSsrfAnalyzer extends AbstractAnalyzer
             && $expr->class instanceof Node\Name
         ) {
             $class = strtolower(ltrim($expr->class->toString(), '\\'));
-            if ($class === 'request' || str_ends_with($class, '\\request')) {
+            if ($class === 'request' || substr_compare($class, '\\request', -strlen('\\request')) === 0) {
                 return false;
             }
             if ($this->isLocalPathName($expr->name->toString())) {

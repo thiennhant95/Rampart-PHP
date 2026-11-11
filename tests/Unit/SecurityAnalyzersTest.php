@@ -56,7 +56,7 @@ final class SecurityAnalyzersTest extends TestCase
         $file = $this->tempPhp("<?php\neval(base64_decode(\$payload));\n");
         $issues = (new ObfuscatedAnalyzer())->analyze([$file]);
         self::assertCount(1, $issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'OBFUSCATED_PHP', Severity::Critical));
+        self::assertTrue($this->ruleMatches($issues[0], 'OBFUSCATED_PHP', Severity::$Critical));
     }
 
     public function testObfuscatedSilentOnPatternNamesInStrings(): void
@@ -85,7 +85,7 @@ final class SecurityAnalyzersTest extends TestCase
         $dense = $this->tempPhp("<?php\n\$a = \"" . $bs . 'x65' . $bs . 'x76' . $bs . 'x61' . $bs . "x6c\";\n");
         $issues = (new ObfuscatedAnalyzer())->analyze([$dense]);
         self::assertCount(1, $issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'OBFUSCATED_PHP', Severity::Critical));
+        self::assertTrue($this->ruleMatches($issues[0], 'OBFUSCATED_PHP', Severity::$Critical));
     }
 
     /** SqlInjectionAnalyzer */
@@ -101,7 +101,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new SqlInjectionAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'SQL_INJECTION', Severity::Critical));
+        self::assertTrue($this->ruleMatches($issues[0], 'SQL_INJECTION', Severity::$Critical));
     }
 
     public function testSqlInjectionFlagsWhereRawWithTaintedInput(): void
@@ -116,7 +116,7 @@ final class SecurityAnalyzersTest extends TestCase
 
         self::assertNotEmpty($issues);
         self::assertSame('SQL_INJECTION', $issues[0]->rule);
-        self::assertSame(Severity::Critical, $issues[0]->severity);
+        self::assertSame(Severity::$Critical, $issues[0]->severity);
     }
 
     public function testSqlInjectionSkipsParameterizedQuery(): void
@@ -172,7 +172,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new UnsafeEvalAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_EVAL', Severity::Critical));
+        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_EVAL', Severity::$Critical));
     }
 
     public function testUnsafeEvalSkipsLiteral(): void
@@ -212,7 +212,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new UnsafeEvalAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_EVAL', Severity::Critical));
+        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_EVAL', Severity::$Critical));
     }
 
     public function testUnsafeEvalSkipsCallUserFuncWithLiteralCallable(): void
@@ -252,7 +252,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new UnsafeEvalAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_EVAL', Severity::Critical));
+        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_EVAL', Severity::$Critical));
     }
 
     public function testUnsafeEvalSkipsAssertInstanceof(): void
@@ -279,7 +279,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new UnsafeEvalAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_EVAL', Severity::Critical));
+        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_EVAL', Severity::$Critical));
     }
 
     public function testUnsafeEvalSkipsAppContainerCallable(): void
@@ -306,7 +306,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new UnsafeEvalAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_EVAL', Severity::Critical));
+        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_EVAL', Severity::$Critical));
     }
 
     /** HardcodedSecretAnalyzer */
@@ -321,7 +321,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new HardcodedSecretAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'HARDCODED_SECRET', Severity::Critical));
+        self::assertTrue($this->ruleMatches($issues[0], 'HARDCODED_SECRET', Severity::$Critical));
     }
 
     public function testHardcodedSecretSkipsNormalVariable(): void
@@ -370,7 +370,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new HardcodedSecretAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'HARDCODED_SECRET', Severity::Critical));
+        self::assertTrue($this->ruleMatches($issues[0], 'HARDCODED_SECRET', Severity::$Critical));
     }
 
     public function testHardcodedSecretFlagsPasswordComparison(): void
@@ -383,7 +383,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new HardcodedSecretAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'HARDCODED_SECRET', Severity::Critical));
+        self::assertTrue($this->ruleMatches($issues[0], 'HARDCODED_SECRET', Severity::$Critical));
     }
 
     public function testHardcodedSecretSkipsPasswordVariableComparison(): void
@@ -408,7 +408,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new HardcodedSecretAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'HARDCODED_SECRET', Severity::Critical));
+        self::assertTrue($this->ruleMatches($issues[0], 'HARDCODED_SECRET', Severity::$Critical));
     }
 
     public function testHardcodedSecretSkipsEnvPlaceholderDefault(): void
@@ -447,7 +447,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new MassAssignmentAnalyzer())->analyze([$controller, $model]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::Error));
+        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::$Error));
     }
 
     public function testMassAssignmentSkipsDefaultGuardedModel(): void
@@ -550,7 +550,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new MassAssignmentAnalyzer())->analyze([$controller, $model]);
 
         self::assertCount(1, $issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::Warning));
+        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::$Warning));
         $payload = $issues[0]->metadata['mass_assignment'] ?? null;
         self::assertIsArray($payload);
         self::assertSame('review', $payload['verdict'] ?? null);
@@ -573,7 +573,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new MassAssignmentAnalyzer())->analyze([$controller, $model]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::Error));
+        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::$Error));
     }
 
     public function testMassAssignmentFlagsUpdateOrCreate(): void
@@ -591,7 +591,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new MassAssignmentAnalyzer())->analyze([$controller, $model]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::Error));
+        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::$Error));
     }
 
     public function testMassAssignmentFlagsForceFillWithRequestInput(): void
@@ -609,7 +609,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new MassAssignmentAnalyzer())->analyze([$controller, $model]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::Error));
+        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::$Error));
     }
 
     public function testMassAssignmentSkipsForceFillWithLiterals(): void
@@ -661,7 +661,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new MassAssignmentAnalyzer())->analyze([$job, $model]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::Error));
+        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::$Error));
     }
 
     /** UnsafeDeserializationAnalyzer */
@@ -677,7 +677,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new UnsafeDeserializationAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_UNSERIALIZE', Severity::Critical));
+        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_UNSERIALIZE', Severity::$Critical));
     }
 
     public function testUnsafeDeserializationSkipsLiteral(): void
@@ -703,7 +703,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new UnsafeDeserializationAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_UNSERIALIZE', Severity::Critical));
+        self::assertTrue($this->ruleMatches($issues[0], 'UNSAFE_UNSERIALIZE', Severity::$Critical));
     }
 
     public function testUnsafeDeserializationSkipsAllowedClassesFalse(): void
@@ -731,7 +731,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new InsecureHashAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_HASH', Severity::Warning));
+        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_HASH', Severity::$Warning));
     }
 
     public function testInsecureHashSkipsNonCredentialContext(): void
@@ -756,7 +756,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new InsecureHashAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_HASH', Severity::Warning));
+        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_HASH', Severity::$Warning));
     }
 
     public function testInsecureHashSkipsStrongHashFunction(): void
@@ -781,7 +781,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new InsecureHashAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_HASH', Severity::Warning));
+        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_HASH', Severity::$Warning));
     }
 
     public function testInsecureHashFlagsUniqidForResetToken(): void
@@ -794,7 +794,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new InsecureHashAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_HASH', Severity::Warning));
+        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_HASH', Severity::$Warning));
     }
 
     public function testInsecureHashSkipsMtRandForLoopCounter(): void
@@ -846,7 +846,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new LaravelTaintAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'LARAVEL_TAINT', Severity::Error));
+        self::assertTrue($this->ruleMatches($issues[0], 'LARAVEL_TAINT', Severity::$Error));
     }
 
     public function testLaravelTaintSkipsLiteralWhereRaw(): void
@@ -874,7 +874,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new DisabledCsrfAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'DISABLED_CSRF_AUTHORIZE_TRUE', Severity::Warning));
+        self::assertTrue($this->ruleMatches($issues[0], 'DISABLED_CSRF_AUTHORIZE_TRUE', Severity::$Warning));
     }
 
     public function testDisabledCsrfFlagsWildcardException(): void
@@ -888,7 +888,7 @@ final class SecurityAnalyzersTest extends TestCase
 
         self::assertNotEmpty($issues);
         self::assertSame('DISABLED_CSRF_EXCEPTION_STAR', $issues[0]->rule);
-        self::assertSame(Severity::Critical, $issues[0]->severity);
+        self::assertSame(Severity::$Critical, $issues[0]->severity);
     }
 
     public function testDisabledCsrfSkipsSafeAuthorize(): void
@@ -926,7 +926,7 @@ final class SecurityAnalyzersTest extends TestCase
 
         self::assertNotEmpty($issues);
         self::assertSame('DISABLED_CSRF_EXCEPTION_STAR', $issues[0]->rule);
-        self::assertSame(Severity::Warning, $issues[0]->severity);
+        self::assertSame(Severity::$Warning, $issues[0]->severity);
     }
 
     public function testMassAssignmentFlagsModelInCustomDirWithConfiguredModelsDirs(): void
@@ -945,7 +945,7 @@ final class SecurityAnalyzersTest extends TestCase
             ->analyze([$controller, $model]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::Error));
+        self::assertTrue($this->ruleMatches($issues[0], 'MASS_ASSIGNMENT', Severity::$Error));
     }
 
     public function testMassAssignmentMissesCustomDirModelWithDefaultOptions(): void
@@ -978,7 +978,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new InsecureCookieAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_COOKIE', Severity::Warning));
+        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_COOKIE', Severity::$Warning));
     }
 
     public function testInsecureCookieFlagsQueueWithFalseSecure(): void
@@ -992,7 +992,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new InsecureCookieAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_COOKIE', Severity::Error));
+        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_COOKIE', Severity::$Error));
     }
 
     public function testInsecureCookieSkipsQueueWithTrueSecure(): void
@@ -1019,7 +1019,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new InsecureCookieAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_COOKIE', Severity::Warning));
+        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_COOKIE', Severity::$Warning));
     }
 
     public function testInsecureCookieFlagsHelperWithoutSecure(): void
@@ -1033,7 +1033,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new InsecureCookieAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_COOKIE', Severity::Warning));
+        self::assertTrue($this->ruleMatches($issues[0], 'INSECURE_COOKIE', Severity::$Warning));
     }
 
     public function testInsecureCookieSkipsTestPath(): void
@@ -1085,7 +1085,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new HardcodedSecretAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'HARDCODED_SECRET', Severity::Critical));
+        self::assertTrue($this->ruleMatches($issues[0], 'HARDCODED_SECRET', Severity::$Critical));
     }
 
     public function testHardcodedSecretStillFlagsVariableAssignment(): void
@@ -1098,7 +1098,7 @@ final class SecurityAnalyzersTest extends TestCase
         $issues = (new HardcodedSecretAnalyzer())->analyze([$file]);
 
         self::assertNotEmpty($issues);
-        self::assertTrue($this->ruleMatches($issues[0], 'HARDCODED_SECRET', Severity::Critical));
+        self::assertTrue($this->ruleMatches($issues[0], 'HARDCODED_SECRET', Severity::$Critical));
     }
 
     public function testHardcodedSecretEvidenceMetadata(): void

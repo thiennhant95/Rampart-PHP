@@ -53,14 +53,10 @@ final class PhpcsBladeExclusionTest extends TestCase
         $this->dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'qc-phpcs-blade-' . uniqid('', true);
         @mkdir($this->dir, 0777, true);
 
-        $ctx = new CheckContext(
-            $this->dir,
-            ['app', 'resources'],
-            [],
-            $this->dir . '/out',
-        );
+        $ctx = new CheckContext($this->dir, ['app', 'resources'], [], $this->dir . '/out');
 
         $method = new ReflectionMethod(PhpcsChecker::class, 'buildCommand');
+        $method->setAccessible(true);
 
         /** @var list<string> $command */
         $command = $method->invoke(new PhpcsChecker(), 'phpcs', $ctx, (string) ($config['standard'] ?? 'PSR12'), $config);
@@ -108,6 +104,7 @@ final class PhpcsBladeExclusionTest extends TestCase
     private function ignores(array $config): array
     {
         $method = new ReflectionMethod(PhpcsChecker::class, 'configuredIgnores');
+        $method->setAccessible(true);
 
         /** @var list<string> $ignores */
         $ignores = $method->invoke(new PhpcsChecker(), $config);
@@ -128,7 +125,7 @@ final class PhpcsBladeExclusionTest extends TestCase
         // directories from the profile: the analyzer runner collects views
         // separately and needs the path. Removing it would silence
         // OWASP_BLADE_XSS on Laravel targets.
-        $profile = \Rampart\Php\Framework\FrameworkProfile::for(\Rampart\Php\Framework\Framework::PLAIN);
+        $profile = \Rampart\Php\Framework\FrameworkProfile::for(\Rampart\Php\Framework\Framework::$PLAIN);
 
         self::assertContains('resources/views', $profile->viewDirs, 'Blade must stay collectable.');
         self::assertContains('app', $profile->scanPaths, 'app/ must be scanned.');

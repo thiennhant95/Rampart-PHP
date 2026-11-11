@@ -22,7 +22,8 @@ use Rampart\Php\Result\Severity;
  * it is a review hint and never fails a default gate.
  *
  * Supported: Slim 4, CodeIgniter 4, Symfony (attributes + YAML routes with
- * `security.yaml` access_control) and FuelPHP (`before()` in the controller).
+ * `security.yaml` access_control), FuelPHP (`before()` in the controller) and
+ * Phalcon (`beforeExecuteRoute`/`beforeDispatch` ACL checks).
  */
 final class RouteAuthAnalyzer extends AbstractAnalyzer
 {
@@ -36,23 +37,35 @@ final class RouteAuthAnalyzer extends AbstractAnalyzer
     private const AUTH_NAME_PATTERN = '/(auth|admin|role|permission|jwt|sanctum|passport|polic|acl|guard|can|login|verified|owner)/i';
 
     private const MUTATING = ['post', 'put', 'patch', 'delete'];
+    /**
+     * @readonly
+     */
+    private FrameworkProfile $profile;
 
-    public function __construct(private readonly FrameworkProfile $profile)
+    public function __construct(FrameworkProfile $profile)
     {
+        $this->profile = $profile;
     }
 
     public function analyze(array $files): array
     {
-        return match ($this->profile->framework) {
-            Framework::SLIM => $this->analyzeSlim($this->routeFiles()),
-            Framework::CODEIGNITER4 => $this->analyzeCodeIgniter($this->routeFiles()),
-            Framework::FUELPHP => $this->analyzeFuelPhp($this->routeFiles()),
-            Framework::SYMFONY => array_merge(
-                $this->analyzeSymfony($files),
-                $this->analyzeSymfonyYaml($this->routeFiles())
-            ),
-            default => [],
-        };
+        switch ($this->profile->framework) {
+            case Framework::$SLIM:
+                return $this->analyzeSlim($this->routeFiles());
+            case Framework::$CODEIGNITER4:
+                return $this->analyzeCodeIgniter($this->routeFiles());
+            case Framework::$FUELPHP:
+                return $this->analyzeFuelPhp($this->routeFiles());
+            case Framework::$SYMFONY:
+                return array_merge(
+                    $this->analyzeSymfony($files),
+                    $this->analyzeSymfonyYaml($this->routeFiles())
+                );
+            case Framework::$PHALCON:
+                return $this->analyzePhalcon($this->routeFiles());
+            default:
+                return [];
+        }
     }
 
     /**
@@ -165,7 +178,7 @@ final class RouteAuthAnalyzer extends AbstractAnalyzer
     private function symfonyMutates(string $methods): bool
     {
         foreach (self::MUTATING as $verb) {
-            if (str_contains($methods, strtoupper($verb))) {
+            if (strpos($methods, strtoupper($verb)) !== false) {
                 return true;
             }
         }
@@ -199,7 +212,7 @@ final class RouteAuthAnalyzer extends AbstractAnalyzer
         $end = $index;
         while (
             $end + 1 < count($lines)
-            && (str_ends_with(rtrim($lines[$end]), '->') || str_starts_with(ltrim($lines[$end + 1]), '->'))
+            && (substr_compare(rtrim($lines[$end]), '->', -strlen('->')) === 0 || strncmp(ltrim($lines[$end + 1]), '->', strlen('->')) === 0)
         ) {
             ++$end;
         }
@@ -626,7 +639,7 @@ final class RouteAuthAnalyzer extends AbstractAnalyzer
         if ($result === false) {
             $literal = trim($pattern, '^$');
 
-            return $literal !== '' && str_starts_with($path, $literal);
+            return $literal !== '' && strncmp($path, $literal, strlen($literal)) === 0;
         }
 
         return false;
@@ -709,6 +722,154 @@ final class RouteAuthAnalyzer extends AbstractAnalyzer
     }
 
     /**
+     * Phalcon: `$router->addPost('/admin', 'Admin::store')` and
+     * `$router->add('/x', 'X::y')->via(['POST'])`. Authorization normally
+     * lives in `beforeExecuteRoute()`/`beforeDispatch()` (often on a shared
+     * ControllerBase), so follow the parent chain.
+     *
+     * @param list<string> $files
+     * @return list<Issue>
+     */
+    private function analyzePhalcon(array $files): array
+    {
+        $issues = [];
+        foreach ($files as $file) {
+            $lines = $this->lines($file);
+            foreach ($lines as $index => $line) {
+                if (preg_match('/\$router\s*->\s*(add|addGet|addPost|addPut|addPatch|addDelete|get|post|put|patch|delete)\s*\(\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"]([^\'"]+)[\'"]/i', $line, $m) !== 1) {
+                    continue;
+                }
+                $methods = $this->phalconMethods(strtolower($m[1]), $lines, $index);
+                if (!$this->phalconMutates($methods)) {
+                    continue;
+                }
+                if ($this->phalconActionHasAuth($m[3])) {
+                    continue;
+                }
+                $issues[] = $this->issue($file, $index + 1, $methods, $m[2], 'Phalcon route');
+            }
+        }
+
+        return $issues;
+    }
+
+    /**
+     * @param list<string> $lines
+     */
+    private function phalconMethods(string $verb, array $lines, int $index): string
+    {
+        switch ($verb) {
+            case 'addpost':
+                return 'POST';
+            case 'addput':
+                return 'PUT';
+            case 'addpatch':
+                return 'PATCH';
+            case 'adddelete':
+                return 'DELETE';
+            case 'post':
+                return 'POST';
+            case 'put':
+                return 'PUT';
+            case 'patch':
+                return 'PATCH';
+            case 'delete':
+                return 'DELETE';
+            case 'addget':
+            case 'get':
+                return 'GET';
+        }
+
+        $statement = $this->statementText($lines, $index);
+        if (preg_match('/->via\s*\(\s*\[([^\]]+)\]/i', $statement, $m) === 1) {
+            return strtoupper(str_replace(['\'', '"', ' ', ','], '', $m[1]));
+        }
+        if (preg_match('/->via\s*\(\s*[\'"]([^\'"]+)[\'"]/i', $statement, $m) === 1) {
+            return strtoupper($m[1]);
+        }
+
+        return 'GET';
+    }
+
+    private function phalconMutates(string $methods): bool
+    {
+        foreach (self::MUTATING as $verb) {
+            if (strpos($methods, strtoupper($verb)) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function phalconActionHasAuth(string $action): bool
+    {
+        $root = $this->scanRoot();
+        if ($root === null) {
+            return false;
+        }
+        $parts = explode('::', $action, 2);
+        $class = $parts[0];
+        $controller = $class;
+        if (substr($controller, -10) !== 'Controller') {
+            $controller .= 'Controller';
+        }
+        $relative = str_replace('\\', '/', $controller);
+        $candidates = [
+            $root . '/app/controllers/' . $relative . '.php',
+            $root . '/app/controllers/' . basename($relative) . '.php',
+            $root . '/app/controllers/' . str_replace('\\', '/', $class) . '.php',
+        ];
+        foreach (array_unique($candidates) as $file) {
+            if (is_file($file) && $this->phalconControllerHasAuth($file, 0)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function phalconControllerHasAuth(string $file, int $depth): bool
+    {
+        if ($depth > 3) {
+            return false;
+        }
+        $source = $this->sharedSource($file);
+        if ($source === '') {
+            return false;
+        }
+
+        foreach (['beforeExecuteRoute', 'beforeDispatch', 'initialize', 'onConstruct'] as $method) {
+            $offset = strpos($source, 'function ' . $method . '(');
+            if ($offset === false) {
+                continue;
+            }
+            $window = $this->methodWindow($source, $offset);
+            if (preg_match('/(?:Acl|isAllowed|denied|notAuthori[sz]ed|Access::|Auth::|currentUser|role|permission)/i', $window) === 1) {
+                return true;
+            }
+        }
+
+        if (preg_match('/class\s+\w+\s+extends\s+([\\\\\w]+)/i', $source, $m) === 1) {
+            $parent = ltrim($m[1], '\\');
+            $position = strrpos($parent, '\\');
+            $short = $position === false ? $parent : substr($parent, $position + 1);
+            if (in_array(strtolower($short), ['controller', 'phalcon\\mvc\\controller'], true)) {
+                return false;
+            }
+            $root = $this->scanRoot();
+            if ($root !== null) {
+                $parentFile = $root . '/app/controllers/' . $short . '.php';
+                if (is_file($parentFile)) {
+                    return $this->phalconControllerHasAuth($parentFile, $depth + 1);
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @return list<string>
      */
     private function lines(string $file): array
@@ -733,9 +894,9 @@ final class RouteAuthAnalyzer extends AbstractAnalyzer
             ),
             $file,
             $line,
-            Severity::Warning,
+            Severity::$Warning,
             ['method' => $method, 'uri' => $uri, 'framework' => $this->profile->framework->value],
-            Confidence::Low
+            Confidence::$Low
         );
     }
 }

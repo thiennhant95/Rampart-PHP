@@ -262,9 +262,9 @@ final class TaintEngine
                 break;
             }
             $callable = null;
-            if (str_starts_with($entry, 'fn:')) {
+            if (strncmp($entry, 'fn:', strlen('fn:')) === 0) {
                 $callable = $index['functions'][substr($entry, 3)] ?? null;
-            } elseif (str_starts_with($entry, 'm:')) {
+            } elseif (strncmp($entry, 'm:', strlen('m:')) === 0) {
                 $callable = $index['methods'][substr($entry, 2)] ?? null;
             }
             if ($callable === null) {
@@ -532,15 +532,15 @@ final class TaintEngine
     private function isSourceCall(string $callName, array $args): bool
     {
         foreach ($this->entryPoints as $ep) {
-            if ($callName === $ep || str_ends_with($callName, '.' . $ep) || $callName === $ep . '()') {
+            if ($callName === $ep || substr_compare($callName, '.' . $ep, -strlen('.' . $ep)) === 0 || $callName === $ep . '()') {
                 return true;
             }
         }
 
         if (
-            str_contains($callName, 'request.input') || $callName === 'input'
-            || str_contains($callName, 'request.all') || $callName === 'request()->all'
-            || str_contains($callName, 'request.query')
+            strpos($callName, 'request.input') !== false || $callName === 'input'
+            || strpos($callName, 'request.all') !== false || $callName === 'request()->all'
+            || strpos($callName, 'request.query') !== false
         ) {
             return true;
         }
@@ -558,7 +558,7 @@ final class TaintEngine
 
         if ($fqn !== null && $this->resolver->isShortName($fqn, 'DB')) {
             foreach (array_keys(self::SQL_SINKS) as $s) {
-                if ($base === $s || str_ends_with($callName, '::' . $s) || str_ends_with($callName, '->' . $s)) {
+                if ($base === $s || substr_compare($callName, '::' . $s, -strlen('::' . $s)) === 0 || substr_compare($callName, '->' . $s, -strlen('->' . $s)) === 0) {
                     return true;
                 }
             }
@@ -585,10 +585,10 @@ final class TaintEngine
 
     private function sinkBase(string $callName): string
     {
-        if (str_contains($callName, '::')) {
+        if (strpos($callName, '::') !== false) {
             return substr($callName, strrpos($callName, '::') + 2);
         }
-        if (str_contains($callName, '->')) {
+        if (strpos($callName, '->') !== false) {
             return substr($callName, strrpos($callName, '->') + 2);
         }
         return $callName;
@@ -670,13 +670,18 @@ final class TaintEngine
 
     private function messageFor(string $rule, string $callName): string
     {
-        return match ($rule) {
-            self::RULE_SQL => sprintf('Tainted user input flows into SQL sink `%s`.', $callName),
-            self::RULE_CMD => sprintf('Tainted user input flows into command execution sink `%s`.', $callName),
-            self::RULE_EVAL => sprintf('Tainted user input reaches dynamic evaluation sink `%s`.', $callName),
-            self::RULE_UNSERIALIZE => sprintf('Tainted user input reaches unserialize sink `%s`.', $callName),
-            default => sprintf('Tainted data reaches sink `%s`.', $callName),
-        };
+        switch ($rule) {
+            case self::RULE_SQL:
+                return sprintf('Tainted user input flows into SQL sink `%s`.', $callName);
+            case self::RULE_CMD:
+                return sprintf('Tainted user input flows into command execution sink `%s`.', $callName);
+            case self::RULE_EVAL:
+                return sprintf('Tainted user input reaches dynamic evaluation sink `%s`.', $callName);
+            case self::RULE_UNSERIALIZE:
+                return sprintf('Tainted user input reaches unserialize sink `%s`.', $callName);
+            default:
+                return sprintf('Tainted data reaches sink `%s`.', $callName);
+        }
     }
 
     private function propagateArgs(string $file, Node $call, string $callName, array $args, array &$tainted): void
@@ -704,7 +709,7 @@ final class TaintEngine
 
     private function resolveCallee(string $callName): ?FunctionLike
     {
-        if (str_contains($callName, '::') || str_contains($callName, '->') || $callName === 'input') {
+        if (strpos($callName, '::') !== false || strpos($callName, '->') !== false || $callName === 'input') {
             return null;
         }
         foreach ($this->fileIndex as $index) {

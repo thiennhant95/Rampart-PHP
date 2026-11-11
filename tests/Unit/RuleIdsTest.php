@@ -50,7 +50,7 @@ final class RuleIdsTest extends TestCase
                 continue;
             }
             foreach ((new ReflectionClass($class))->getConstants() as $name => $value) {
-                if (!is_string($value) || !str_starts_with($name, 'RULE')) {
+                if (!is_string($value) || strncmp($name, 'RULE', strlen('RULE')) !== 0) {
                     continue;
                 }
                 if (!preg_match('/^[A-Z][A-Z0-9_]*$/', $value)) {
@@ -72,7 +72,7 @@ final class RuleIdsTest extends TestCase
     {
         return array_filter(
             $this->rulesDeclaredByAnalyzers(),
-            static fn (string $rule): bool => str_starts_with($rule, 'OWASP_'),
+            static fn (string $rule): bool => strncmp($rule, 'OWASP_', strlen('OWASP_')) === 0,
             ARRAY_FILTER_USE_KEY
         );
     }

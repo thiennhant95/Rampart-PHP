@@ -105,7 +105,7 @@ final class OwaspBladeXssAnalyzer extends AbstractAnalyzer
 
     public function supports(string $path): bool
     {
-        return str_ends_with(strtolower($path), '.blade.php');
+        return substr_compare(strtolower($path), '.blade.php', -strlen('.blade.php')) === 0;
     }
 
     /**
@@ -178,11 +178,11 @@ final class OwaspBladeXssAnalyzer extends AbstractAnalyzer
                 continue;
             }
 
-            if (str_contains($inner, '->links(')) {
+            if (strpos($inner, '->links(') !== false) {
                 continue;
             }
 
-            if (str_contains($inner, '->appends(') && str_contains($inner, '->render()')) {
+            if (strpos($inner, '->appends(') !== false && strpos($inner, '->render()') !== false) {
                 continue;
             }
 
@@ -194,7 +194,7 @@ final class OwaspBladeXssAnalyzer extends AbstractAnalyzer
                 continue;
             }
 
-            if (!str_contains($inner, '$') && !str_contains($inner, 'request(')) {
+            if (strpos($inner, '$') === false && strpos($inner, 'request(') === false) {
                 continue;
             }
 
@@ -213,9 +213,9 @@ final class OwaspBladeXssAnalyzer extends AbstractAnalyzer
                 'Potential Blade XSS: unescaped output {!! ... !!} contains dynamic data.',
                 $file,
                 $line,
-                $requestDerived ? Severity::Error : Severity::Warning,
+                $requestDerived ? Severity::$Error : Severity::$Warning,
                 ['sink' => $sink],
-                $requestDerived ? Confidence::High : Confidence::Medium
+                $requestDerived ? Confidence::$High : Confidence::$Medium
             );
         }
 
@@ -260,9 +260,9 @@ final class OwaspBladeXssAnalyzer extends AbstractAnalyzer
                 'Potential Blade LFI: dynamic view name in @' . $name . ' can load an unintended template — pin it to a string literal or an allow-list.',
                 $file,
                 $line,
-                Severity::Error,
+                Severity::$Error,
                 ['sink' => $sink, 'kind' => 'dynamic-include'],
-                Confidence::Medium
+                Confidence::$Medium
             );
         }
 
@@ -276,7 +276,7 @@ final class OwaspBladeXssAnalyzer extends AbstractAnalyzer
     private function viewArgument(string $directive, string $paren): ?string
     {
         $inner = trim($paren);
-        if (!str_starts_with($inner, '(') || !str_ends_with($inner, ')')) {
+        if (strncmp($inner, '(', strlen('(')) !== 0 || substr_compare($inner, ')', -strlen(')')) !== 0) {
             return null;
         }
         $args = $this->splitTopLevel(substr($inner, 1, -1));
@@ -336,12 +336,12 @@ final class OwaspBladeXssAnalyzer extends AbstractAnalyzer
         }
         // Any $ variable makes the name steerable — including a concat like
         // 'layouts.' . $theme that merely starts with a literal.
-        if (str_contains($view, '$')) {
+        if (strpos($view, '$') !== false) {
             return true;
         }
         // A bare call (viewName(), ...) cannot be resolved statically, except
         // deploy-time config()/env() lookups which are safe by convention.
-        if (str_contains($view, '(')) {
+        if (strpos($view, '(') !== false) {
             return preg_match('/^\s*(config|env)\s*\(/i', $trimmed) !== 1;
         }
 
@@ -354,11 +354,11 @@ final class OwaspBladeXssAnalyzer extends AbstractAnalyzer
      */
     private function isRequestDerived(string $inner): bool
     {
-        return str_contains($inner, 'request(')
-            || str_contains($inner, '$request')
-            || str_contains($inner, '$_GET')
-            || str_contains($inner, '$_POST')
-            || str_contains($inner, '$_REQUEST');
+        return strpos($inner, 'request(') !== false
+            || strpos($inner, '$request') !== false
+            || strpos($inner, '$_GET') !== false
+            || strpos($inner, '$_POST') !== false
+            || strpos($inner, '$_REQUEST') !== false;
     }
 
     private function isSanitized(string $inner): bool
@@ -370,8 +370,8 @@ final class OwaspBladeXssAnalyzer extends AbstractAnalyzer
             }
         }
         foreach ($this->extraSanitizers as $fn) {
-            $needle = str_ends_with($fn, '::') || str_ends_with($fn, '(') ? $fn : $fn . '(';
-            if (str_contains($lower, $needle)) {
+            $needle = substr_compare($fn, '::', -strlen('::')) === 0 || substr_compare($fn, '(', -strlen('(')) === 0 ? $fn : $fn . '(';
+            if (strpos($lower, $needle) !== false) {
                 return true;
             }
         }
@@ -386,7 +386,7 @@ final class OwaspBladeXssAnalyzer extends AbstractAnalyzer
      */
     private function isLiteralTernary(string $inner): bool
     {
-        if (!str_contains($inner, '?') || !str_contains($inner, ':')) {
+        if (strpos($inner, '?') === false || strpos($inner, ':') === false) {
             return false;
         }
         if (preg_match('/^(.*?)\?(.*):(.*)$/s', $inner, $m) !== 1) {
@@ -394,7 +394,7 @@ final class OwaspBladeXssAnalyzer extends AbstractAnalyzer
         }
         foreach ([$m[2], $m[3]] as $branch) {
             $branch = trim((string) $branch);
-            if ($branch === '' || str_starts_with($branch, ':') || str_contains($branch, '$') || str_contains($branch, '(')) {
+            if ($branch === '' || strncmp($branch, ':', strlen(':')) === 0 || strpos($branch, '$') !== false || strpos($branch, '(') !== false) {
                 return false;
             }
         }
@@ -406,16 +406,16 @@ final class OwaspBladeXssAnalyzer extends AbstractAnalyzer
     {
         $lower = strtolower($inner);
         foreach (self::EVENT_FUNCS as $fn) {
-            $needle = str_ends_with($fn, '::') ? $fn : $fn . '(';
-            if (str_contains($lower, $needle)) {
+            $needle = substr_compare($fn, '::', -strlen('::')) === 0 ? $fn : $fn . '(';
+            if (strpos($lower, $needle) !== false) {
                 return true;
             }
         }
         foreach (self::FORMATTER_FUNCS as $fn) {
             // Prefix entries (ending in _) match the family:
             // format_amount_by_ covers _symbol/_code/_currency/_account.
-            $needle = str_ends_with($fn, '_') ? $fn : $fn . '(';
-            if (str_contains($lower, $needle)) {
+            $needle = substr_compare($fn, '_', -strlen('_')) === 0 ? $fn : $fn . '(';
+            if (strpos($lower, $needle) !== false) {
                 return true;
             }
         }
@@ -429,12 +429,12 @@ final class OwaspBladeXssAnalyzer extends AbstractAnalyzer
      */
     private function isHexEncodedJson(string $inner): bool
     {
-        if (!str_contains($inner, 'json_encode(')) {
+        if (strpos($inner, 'json_encode(') === false) {
             return false;
         }
 
         foreach (self::JSON_HEX_FLAGS as $flag) {
-            if (!str_contains($inner, $flag)) {
+            if (strpos($inner, $flag) === false) {
                 return false;
             }
         }

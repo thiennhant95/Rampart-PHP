@@ -44,12 +44,12 @@ final class MiddlewareTaxonomy
         // Guest markers route *away* from authenticated users: the route
         // is public by design, never protected (even `guestAdmin`, which
         // merely contains a protective-sounding word).
-        if ($base === 'guest' || str_starts_with($base, 'guest')) {
+        if ($base === 'guest' || strncmp($base, 'guest', strlen('guest')) === 0) {
             return self::NONE;
         }
 
         foreach ($extraFragments as $fragment) {
-            if ($fragment !== '' && str_contains($base, $fragment)) {
+            if ($fragment !== '' && strpos($base, $fragment) !== false) {
                 return self::AUTHORIZATION;
             }
         }
@@ -60,11 +60,11 @@ final class MiddlewareTaxonomy
         $lower = strtolower(trim($middleware));
         if (
             $base === 'can'
-            || str_starts_with($lower, 'can:')
+            || strncmp($lower, 'can:', strlen('can:')) === 0
             || $base === 'permission'
-            || str_starts_with($lower, 'permission:')
+            || strncmp($lower, 'permission:', strlen('permission:')) === 0
             || $base === 'role'
-            || str_starts_with($lower, 'role:')
+            || strncmp($lower, 'role:', strlen('role:')) === 0
         ) {
             return self::AUTHORIZATION;
         }
@@ -74,21 +74,21 @@ final class MiddlewareTaxonomy
         // top of authentication — never a permission check).
         if (
             $base === 'auth'
-            || str_starts_with($base, 'auth:')
+            || strncmp($base, 'auth:', strlen('auth:')) === 0
             || $base === 'sanctum'
-            || str_starts_with($base, 'sanctum:')
+            || strncmp($base, 'sanctum:', strlen('sanctum:')) === 0
             || $base === 'jwt'
-            || str_starts_with($base, 'jwt:')
-            || str_starts_with($base, 'jwt.')
+            || strncmp($base, 'jwt:', strlen('jwt:')) === 0
+            || strncmp($base, 'jwt.', strlen('jwt.')) === 0
             || $base === 'oauth'
-            || str_starts_with($base, 'oauth:')
+            || strncmp($base, 'oauth:', strlen('oauth:')) === 0
             || $base === 'verified'
             || $base === 'apikey'
             || $base === 'api_key'
             || $base === 'api.key'
-            || str_contains($base, 'api.key')
-            || str_contains($base, 'api_key')
-            || str_contains($base, 'apikey')
+            || strpos($base, 'api.key') !== false
+            || strpos($base, 'api_key') !== false
+            || strpos($base, 'apikey') !== false
         ) {
             return self::AUTHENTICATION;
         }
@@ -97,7 +97,7 @@ final class MiddlewareTaxonomy
         // default groups, route-model binding.
         if (
             $base === 'throttle'
-            || str_starts_with($base, 'throttle:')
+            || strncmp($base, 'throttle:', strlen('throttle:')) === 0
             || $base === 'web'
             || $base === 'api'
             || $base === 'bindings'

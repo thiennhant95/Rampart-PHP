@@ -71,7 +71,7 @@ final class UnsafeDeserializationAnalyzer implements ScanContextAware
                     'unserialize() is called with a non-literal (potentially untrusted) argument.',
                     $file,
                     $call->getStartLine(),
-                    Severity::Critical,
+                    Severity::$Critical,
                     'custom',
                     ['function' => 'unserialize']
                 );
@@ -90,7 +90,7 @@ final class UnsafeDeserializationAnalyzer implements ScanContextAware
                     sprintf('%s() is called with a non-literal (potentially untrusted) argument; YAML tags can instantiate PHP objects.', $functionName),
                     $file,
                     $call->getStartLine(),
-                    Severity::Critical,
+                    Severity::$Critical,
                     'custom',
                     ['function' => $functionName]
                 );
@@ -109,7 +109,7 @@ final class UnsafeDeserializationAnalyzer implements ScanContextAware
                         'unserialize_callback_func is set to a non-literal callback, allowing arbitrary code execution on unserialize.',
                         $file,
                         $call->getStartLine(),
-                        Severity::Critical,
+                        Severity::$Critical,
                         'custom',
                         ['function' => 'unserialize_callback_func']
                     );

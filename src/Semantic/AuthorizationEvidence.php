@@ -22,14 +22,33 @@ final class AuthorizationEvidence
     public const MECH_DENY = 'authorize-deny';
 
     public const MECH_NONE = 'authorize-none';
-
-    public function __construct(
-        public readonly string $source,
-        public readonly string $requestClass,
-        public readonly string $mechanism,
-        public readonly ?string $ability,
-        public readonly string $confidence,
-    ) {
+    /**
+     * @readonly
+     */
+    public string $source;
+    /**
+     * @readonly
+     */
+    public string $requestClass;
+    /**
+     * @readonly
+     */
+    public string $mechanism;
+    /**
+     * @readonly
+     */
+    public ?string $ability;
+    /**
+     * @readonly
+     */
+    public string $confidence;
+    public function __construct(string $source, string $requestClass, string $mechanism, ?string $ability, string $confidence)
+    {
+        $this->source = $source;
+        $this->requestClass = $requestClass;
+        $this->mechanism = $mechanism;
+        $this->ability = $ability;
+        $this->confidence = $confidence;
     }
 
     /**

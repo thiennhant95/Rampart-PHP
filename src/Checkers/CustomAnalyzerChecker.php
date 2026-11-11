@@ -22,7 +22,7 @@ final class CustomAnalyzerChecker extends AnalyzerChecker
     public function run(CheckContext $ctx): CheckResult
     {
         if ($ctx->frameworkProfile === null) {
-            $ctx->frameworkProfile = FrameworkProfile::for(Framework::PLAIN);
+            $ctx->frameworkProfile = FrameworkProfile::for(Framework::$PLAIN);
         }
 
         return parent::run($ctx);

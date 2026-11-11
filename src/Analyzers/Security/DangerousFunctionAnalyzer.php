@@ -42,17 +42,28 @@ final class DangerousFunctionAnalyzer extends AbstractAnalyzer
                     continue;
                 }
                 $name = strtolower($call->name->getLast());
-                $reason = match ($name) {
-                    'extract' => 'extract() imports arbitrary array keys into local scope; prefer explicit assignments.',
-                    'parse_str' => count($call->args) === 1
-                        ? 'parse_str() without a result array writes into the current scope; pass a second argument.'
-                        : null,
-                    'create_function' => 'create_function() builds code from a string (removed in PHP 8); use a closure.',
-                    'preg_replace', 'mb_ereg_replace' => $this->hasEvalModifier($call->args[0] ?? null)
-                        ? 'preg_replace() with the /e modifier evaluates the replacement as PHP; use preg_replace_callback().'
-                        : null,
-                    default => null,
-                };
+                switch ($name) {
+                    case 'extract':
+                        $reason = 'extract() imports arbitrary array keys into local scope; prefer explicit assignments.';
+                        break;
+                    case 'parse_str':
+                        $reason = count($call->args) === 1
+                            ? 'parse_str() without a result array writes into the current scope; pass a second argument.'
+                            : null;
+                        break;
+                    case 'create_function':
+                        $reason = 'create_function() builds code from a string (removed in PHP 8); use a closure.';
+                        break;
+                    case 'preg_replace':
+                    case 'mb_ereg_replace':
+                        $reason = $this->hasEvalModifier($call->args[0] ?? null)
+                            ? 'preg_replace() with the /e modifier evaluates the replacement as PHP; use preg_replace_callback().'
+                            : null;
+                        break;
+                    default:
+                        $reason = null;
+                        break;
+                }
                 if ($reason === null) {
                     continue;
                 }
@@ -61,9 +72,9 @@ final class DangerousFunctionAnalyzer extends AbstractAnalyzer
                     $reason,
                     $file,
                     $call->getStartLine(),
-                    Severity::Error,
+                    Severity::$Error,
                     ['function' => $name],
-                    Confidence::Medium
+                    Confidence::$Medium
                 );
             }
         }
@@ -87,6 +98,6 @@ final class DangerousFunctionAnalyzer extends AbstractAnalyzer
         }
         $modifiers = substr($pattern, $last + 1);
 
-        return str_contains($modifiers, 'e');
+        return strpos($modifiers, 'e') !== false;
     }
 }

@@ -115,7 +115,7 @@ final class HardcodedSecretAnalyzer extends AbstractAnalyzer
                     'Possible hardcoded secret detected: default secret in env().',
                     $file,
                     $index + 1,
-                    Severity::Critical,
+                    Severity::$Critical,
                     [
                         'kind' => 'env default secret',
                         'hint' => mb_substr(trim($line), 0, 120),
@@ -137,7 +137,7 @@ final class HardcodedSecretAnalyzer extends AbstractAnalyzer
                         sprintf('Possible hardcoded secret detected: %s.', $label),
                         $file,
                         $index + 1,
-                        Severity::Critical,
+                        Severity::$Critical,
                         [
                             'kind' => $label,
                             'hint' => mb_substr(trim($line), 0, 120),
@@ -160,7 +160,7 @@ final class HardcodedSecretAnalyzer extends AbstractAnalyzer
                     'Possible hardcoded secret detected: password compared against a hardcoded literal (master-password/backdoor pattern).',
                     $file,
                     $index + 1,
-                    Severity::Critical,
+                    Severity::$Critical,
                     [
                         'kind' => 'hardcoded password comparison',
                         'hint' => mb_substr(trim($line), 0, 120),
@@ -188,7 +188,7 @@ final class HardcodedSecretAnalyzer extends AbstractAnalyzer
  */
     private function isEmbeddedSource(string $line): bool
     {
-        return str_contains($line, '<?php') || str_contains($line, '<?=');
+        return strpos($line, '<?php') !== false || strpos($line, '<?=') !== false;
     }
 
     private function isFieldNameDeclaration(string $line): bool
@@ -206,7 +206,7 @@ final class HardcodedSecretAnalyzer extends AbstractAnalyzer
     {
         $lower = strtolower($matched);
         foreach (self::FAKE_FIXTURE_MARKERS as $marker) {
-            if (str_contains($lower, $marker)) {
+            if (strpos($lower, $marker) !== false) {
                 return true;
             }
         }
@@ -289,7 +289,7 @@ final class HardcodedSecretAnalyzer extends AbstractAnalyzer
             if ($normalizedValue === '') {
                 continue;
             }
-            if (str_contains($normalizedName, $normalizedValue) || str_contains($normalizedValue, $normalizedName)) {
+            if (strpos($normalizedName, $normalizedValue) !== false || strpos($normalizedValue, $normalizedName) !== false) {
                 return true;
             }
         }
@@ -342,7 +342,7 @@ final class HardcodedSecretAnalyzer extends AbstractAnalyzer
     private function knownPrefix(string $matched): ?string
     {
         foreach (self::KNOWN_SECRET_PREFIXES as $prefix) {
-            if (str_contains($matched, $prefix)) {
+            if (strpos($matched, $prefix) !== false) {
                 return $prefix;
             }
         }

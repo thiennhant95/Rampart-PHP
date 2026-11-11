@@ -23,7 +23,7 @@ final class InlineSuppressorTest extends TestCase
 
     private function issue(string $file, int $line, string $rule = 'OWASP_SSRF'): Issue
     {
-        return new Issue($rule, 'msg', $file, $line, Severity::Error, 'custom');
+        return new Issue($rule, 'msg', $file, $line, Severity::$Error, 'custom');
     }
 
     public function testSameLineIgnoreSuppressesMatchingRule(): void
@@ -100,8 +100,8 @@ final class InlineSuppressorTest extends TestCase
     {
         $suppressor = new InlineSuppressor();
         $kept = $suppressor->filter([
-            new Issue('OWASP_SSRF', 'msg', '/no/such/file.php', 1, Severity::Error, 'custom'),
-            new Issue('OWASP_SSRF', 'msg', null, null, Severity::Error, 'custom'),
+            new Issue('OWASP_SSRF', 'msg', '/no/such/file.php', 1, Severity::$Error, 'custom'),
+            new Issue('OWASP_SSRF', 'msg', null, null, Severity::$Error, 'custom'),
         ]);
 
         self::assertCount(2, $kept);

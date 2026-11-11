@@ -184,11 +184,11 @@ final class JsonReporter implements ReporterInterface
                 if (!$issue instanceof Issue) {
                     continue;
                 }
-                if ($issue->severity === Severity::Critical) {
+                if ($issue->severity === Severity::$Critical) {
                     ++$summary['critical'];
-                } elseif ($issue->severity === Severity::Error) {
+                } elseif ($issue->severity === Severity::$Error) {
                     ++$summary['error'];
-                } elseif ($issue->severity === Severity::Warning) {
+                } elseif ($issue->severity === Severity::$Warning) {
                     ++$summary['warning'];
                 } else {
                     ++$summary['info'];

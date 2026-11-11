@@ -132,9 +132,9 @@ final class InsecureSessionAnalyzer extends AbstractAnalyzer
             sprintf('Session setting "%s" is disabled, removing %s.', $setting, $protects),
             $file,
             $call->getStartLine(),
-            Severity::Warning,
+            Severity::$Warning,
             ['setting' => $setting],
-            Confidence::High
+            Confidence::$High
         );
     }
 }

@@ -100,7 +100,7 @@ final class UnsafeEvalAnalyzer extends AbstractAnalyzer
                 sprintf('%s() is called with non-literal input; this can lead to arbitrary code execution.', $name),
                 $file,
                 $call->getStartLine(),
-                Severity::Critical,
+                Severity::$Critical,
                 ['function' => $name]
             );
         }
@@ -119,7 +119,7 @@ final class UnsafeEvalAnalyzer extends AbstractAnalyzer
                 'eval() is called with non-literal input; this can lead to arbitrary code execution.',
                 $file,
                 $eval->getStartLine(),
-                Severity::Critical,
+                Severity::$Critical,
                 ['function' => 'eval']
             );
         }
@@ -333,11 +333,12 @@ final class UnsafeEvalAnalyzer extends AbstractAnalyzer
 
     /**
      * @param list<Node> $nodes
+     * @return \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_|null
      */
     private function enclosingFunction(
         Node $call,
         array $nodes
-    ): Node\Stmt\ClassMethod|Node\Stmt\Function_|null {
+    ) {
         $target = spl_object_id($call);
         $funcs = $this->finder()->find($nodes, static function (Node $node): bool {
             return $node instanceof Node\Stmt\ClassMethod || $node instanceof Node\Stmt\Function_;

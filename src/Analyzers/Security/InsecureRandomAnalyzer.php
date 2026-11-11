@@ -70,9 +70,9 @@ final class InsecureRandomAnalyzer extends AbstractAnalyzer
                     ),
                     $file,
                     $call->getStartLine(),
-                    Severity::Warning,
+                    Severity::$Warning,
                     ['function' => $name, 'context' => $context],
-                    Confidence::Medium
+                    Confidence::$Medium
                 );
             }
         }
@@ -104,7 +104,7 @@ final class InsecureRandomAnalyzer extends AbstractAnalyzer
     private function hasSecurityHint(string $context): bool
     {
         foreach (self::HINTS as $hint) {
-            if (str_contains($context, $hint)) {
+            if (strpos($context, $hint) !== false) {
                 return true;
             }
         }

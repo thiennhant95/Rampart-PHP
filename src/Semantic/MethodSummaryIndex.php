@@ -248,7 +248,7 @@ final class MethodSummaryIndex implements ScanContextAware
         if ($node instanceof Node\Name\FullyQualified) {
             return $node->toString();
         }
-        if (str_starts_with($name, '\\')) {
+        if (strncmp($name, '\\', strlen('\\')) === 0) {
             return ltrim($name, '\\');
         }
         $pos = strpos($name, '\\');
@@ -419,15 +419,29 @@ final class MethodSummaryIndex implements ScanContextAware
         }
         if ($expr instanceof Node\Expr\MethodCall && $expr->name instanceof Node\Identifier) {
             $op = strtolower($expr->name->toString());
-            $mapped = match ($op) {
-                'all' => MethodSummary::OP_ALL,
-                'input' => MethodSummary::OP_INPUT,
-                'only' => MethodSummary::OP_ONLY,
-                'except' => MethodSummary::OP_EXCEPT,
-                'validated' => MethodSummary::OP_VALIDATED,
-                'safe' => MethodSummary::OP_SAFE,
-                default => null,
-            };
+            switch ($op) {
+                case 'all':
+                    $mapped = MethodSummary::OP_ALL;
+                    break;
+                case 'input':
+                    $mapped = MethodSummary::OP_INPUT;
+                    break;
+                case 'only':
+                    $mapped = MethodSummary::OP_ONLY;
+                    break;
+                case 'except':
+                    $mapped = MethodSummary::OP_EXCEPT;
+                    break;
+                case 'validated':
+                    $mapped = MethodSummary::OP_VALIDATED;
+                    break;
+                case 'safe':
+                    $mapped = MethodSummary::OP_SAFE;
+                    break;
+                default:
+                    $mapped = null;
+                    break;
+            }
             if ($mapped === null) {
                 // Any other call in return position needs a nested
                 // summary — out of bounded depth-1 scope.

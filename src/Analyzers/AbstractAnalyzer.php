@@ -33,9 +33,9 @@ abstract class AbstractAnalyzer implements ScanContextAware
     {
         $normalized = strtolower(str_replace('\\', '/', $path));
 
-        return str_contains($normalized, '/tests/')
-            || str_contains($normalized, '/test/')
-            || str_ends_with($normalized, 'test.php');
+        return strpos($normalized, '/tests/') !== false
+            || strpos($normalized, '/test/') !== false
+            || substr_compare($normalized, 'test.php', -strlen('test.php')) === 0;
     }
 
     protected function finder(): NodeFinder
@@ -45,15 +45,8 @@ abstract class AbstractAnalyzer implements ScanContextAware
         return new CountingNodeFinder();
     }
 
-    protected function makeIssue(
-        string $rule,
-        string $message,
-        string $file,
-        ?int $line,
-        Severity $severity,
-        array $metadata = [],
-        Confidence $confidence = Confidence::High,
-    ): Issue {
+    protected function makeIssue(string $rule, string $message, string $file, ?int $line, Severity $severity, array $metadata = [], ?Confidence $confidence = null): Issue
+    {
         return new Issue($rule, $message, $file, $line, $severity, 'custom', $metadata, $confidence);
     }
 
@@ -115,13 +108,13 @@ abstract class AbstractAnalyzer implements ScanContextAware
     {
         $lower = strtolower($name);
         foreach (self::REMOTE_NAME_HINTS as $hint) {
-            if (str_contains($lower, $hint)) {
+            if (strpos($lower, $hint) !== false) {
                 return false;
             }
         }
 
         foreach (self::LOCAL_NAME_HINTS as $hint) {
-            if (str_contains($lower, $hint)) {
+            if (strpos($lower, $hint) !== false) {
                 return true;
             }
         }

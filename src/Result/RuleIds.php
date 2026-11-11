@@ -215,7 +215,7 @@ final class RuleIds
      */
     public static function isOwasp(string $rule): bool
     {
-        return str_starts_with($rule, 'OWASP_');
+        return strncmp($rule, 'OWASP_', strlen('OWASP_')) === 0;
     }
 
     public static function owaspCategory(string $rule): ?string

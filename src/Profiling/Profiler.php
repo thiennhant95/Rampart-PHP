@@ -108,7 +108,7 @@ final class Profiler
      *
      * @return mixed analyzer result
      */
-    public static function timeAnalyzer(string $name, callable $run): mixed
+    public static function timeAnalyzer(string $name, callable $run)
     {
         if (!self::$enabled) {
             return $run();
@@ -208,7 +208,10 @@ final class Profiler
         self::$counters[$key] = (self::$counters[$key] ?? 0) + $count;
     }
 
-    public static function gauge(string $key, int|float $value): void
+    /**
+     * @param int|float $value
+     */
+    public static function gauge(string $key, $value): void
     {
         if (!self::$enabled) {
             return;

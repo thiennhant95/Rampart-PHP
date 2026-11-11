@@ -115,20 +115,21 @@ final class TrivyDownloader
 
     private function osName(): string
     {
-        // Trivy release assets use lowercase os names, e.g. `windows-64bit`,
-        // `linux-64bit`, `macos-64bit`.
-        return match (PHP_OS_FAMILY) {
-            'Windows' => 'windows',
-            'Darwin' => 'macos',
-            default => 'linux',
-        };
+        switch (PHP_OS_FAMILY) {
+            case 'Windows':
+                return 'windows';
+            case 'Darwin':
+                return 'macos';
+            default:
+                return 'linux';
+        }
     }
 
     private function archName(): string
     {
         $machine = strtolower(PHP_INT_SIZE === 8 ? php_uname('m') : 'x86_64');
 
-        return str_contains($machine, 'arm') || str_contains($machine, 'aarch64') ? 'ARM64' : '64bit';
+        return strpos($machine, 'arm') !== false || strpos($machine, 'aarch64') !== false ? 'ARM64' : '64bit';
     }
 
     private function isWindows(): bool
@@ -201,7 +202,7 @@ final class TrivyDownloader
             return $process->isSuccessful();
         }
 
-        $cmd = str_ends_with($archive, '.zip') ? ['unzip', '-o', $archive, '-d', $dest] : ['tar', '-xzf', $archive, '-C', $dest];
+        $cmd = substr_compare($archive, '.zip', -strlen('.zip')) === 0 ? ['unzip', '-o', $archive, '-d', $dest] : ['tar', '-xzf', $archive, '-C', $dest];
         $process = new Process($cmd);
         $process->run();
 

@@ -556,7 +556,7 @@ final class MassAssignmentFlow
                     && $param->var instanceof Node\Expr\Variable
                     && $param->var->name === $expr->name
                     && $param->type instanceof Node\Name
-                    && str_contains(strtolower($param->type->toString()), 'request')
+                    && strpos(strtolower($param->type->toString()), 'request') !== false
                 ) {
                     return true;
                 }

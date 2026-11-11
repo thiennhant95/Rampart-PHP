@@ -17,13 +17,7 @@ final class CheckRunnerTest extends TestCase
 {
     private function context(string $failOn): CheckContext
     {
-        return new CheckContext(
-            sys_get_temp_dir(),
-            ['app'],
-            [],
-            sys_get_temp_dir() . '/reports',
-            failOn: $failOn,
-        );
+        return new CheckContext(sys_get_temp_dir(), ['app'], [], sys_get_temp_dir() . '/reports', false, false, false, '0.0.0', $failOn);
     }
 
     private function resultWithIssue(Severity $severity): CheckResult
@@ -37,8 +31,8 @@ final class CheckRunnerTest extends TestCase
     {
         $runner = new CheckRunner($this->context('error'));
 
-        self::assertTrue($runner->shouldFail([$this->resultWithIssue(Severity::Error)]));
-        self::assertFalse($runner->shouldFail([$this->resultWithIssue(Severity::Warning)]));
+        self::assertTrue($runner->shouldFail([$this->resultWithIssue(Severity::$Error)]));
+        self::assertFalse($runner->shouldFail([$this->resultWithIssue(Severity::$Warning)]));
         self::assertFalse($runner->shouldFail([new CheckResult('phpcs', 'passed', 0.1, [], null, null)]));
     }
 
@@ -46,22 +40,22 @@ final class CheckRunnerTest extends TestCase
     {
         $runner = new CheckRunner($this->context('warning'));
 
-        self::assertTrue($runner->shouldFail([$this->resultWithIssue(Severity::Warning)]));
+        self::assertTrue($runner->shouldFail([$this->resultWithIssue(Severity::$Warning)]));
     }
 
     public function testShouldFailOnCritical(): void
     {
         $runner = new CheckRunner($this->context('critical'));
 
-        self::assertFalse($runner->shouldFail([$this->resultWithIssue(Severity::Error)]));
-        self::assertTrue($runner->shouldFail([$this->resultWithIssue(Severity::Critical)]));
+        self::assertFalse($runner->shouldFail([$this->resultWithIssue(Severity::$Error)]));
+        self::assertTrue($runner->shouldFail([$this->resultWithIssue(Severity::$Critical)]));
     }
 
     public function testShouldNeverFailOnNone(): void
     {
         $runner = new CheckRunner($this->context('none'));
 
-        self::assertFalse($runner->shouldFail([$this->resultWithIssue(Severity::Critical)]));
+        self::assertFalse($runner->shouldFail([$this->resultWithIssue(Severity::$Critical)]));
     }
 
     public function testCacheDisabledBypassesGetAndPut(): void
@@ -71,13 +65,7 @@ final class CheckRunnerTest extends TestCase
         @mkdir($outputDir, 0777, true);
 
         try {
-            $ctx = new CheckContext(
-                $base,
-                ['app'],
-                ['cache' => ['enabled' => false]],
-                $outputDir,
-                failOn: 'error',
-            );
+            $ctx = new CheckContext($base, ['app'], ['cache' => ['enabled' => false]], $outputDir, false, false, false, '0.0.0', 'error');
 
             $checker = new class implements CheckerInterface {
                 public int $runs = 0;
@@ -130,13 +118,7 @@ final class CheckRunnerTest extends TestCase
             $freshBase = $base . '-fresh';
             $freshOutput = $freshBase . DIRECTORY_SEPARATOR . 'reports';
             @mkdir($freshOutput, 0777, true);
-            $freshCtx = new CheckContext(
-                $freshBase,
-                ['app'],
-                ['cache' => ['enabled' => false]],
-                $freshOutput,
-                failOn: 'error',
-            );
+            $freshCtx = new CheckContext($freshBase, ['app'], ['cache' => ['enabled' => false]], $freshOutput, false, false, false, '0.0.0', 'error');
             (new CheckRunner($freshCtx))->run([$checker]);
             self::assertSame([], glob($freshOutput . DIRECTORY_SEPARATOR . '.cache' . DIRECTORY_SEPARATOR . '*.json') ?: []);
         } finally {
@@ -147,15 +129,9 @@ final class CheckRunnerTest extends TestCase
 
     public function testIgnoredRulesAreDroppedFromResults(): void
     {
-        $ctx = new CheckContext(
-            sys_get_temp_dir(),
-            ['app'],
-            ['quality_gate' => ['ignore' => ['MISSING_MODEL_TEST']]],
-            sys_get_temp_dir() . '/reports',
-            failOn: 'error',
-        );
-        $ignored = new Issue('MISSING_MODEL_TEST', 'message', 'file.php', 1, Severity::Warning, 'custom');
-        $kept = new Issue('OWASP_SSRF', 'message', 'file.php', 2, Severity::Error, 'custom');
+        $ctx = new CheckContext(sys_get_temp_dir(), ['app'], ['quality_gate' => ['ignore' => ['MISSING_MODEL_TEST']]], sys_get_temp_dir() . '/reports', false, false, false, '0.0.0', 'error');
+        $ignored = new Issue('MISSING_MODEL_TEST', 'message', 'file.php', 1, Severity::$Warning, 'custom');
+        $kept = new Issue('OWASP_SSRF', 'message', 'file.php', 2, Severity::$Error, 'custom');
         $checker = new class ([$ignored, $kept]) implements CheckerInterface {
             /** @var Issue[] */
             private array $issues;
@@ -206,14 +182,7 @@ final class CheckRunnerTest extends TestCase
         // sharing sys_get_temp_dir()/reports with other tests would serve
         // their cached stub result here.
         $out = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'reports-sev-' . uniqid('', true);
-        $ctx = new CheckContext(
-            sys_get_temp_dir(),
-            ['app'],
-            [],
-            $out,
-            failOn: 'none',
-            minSeverity: 'error',
-        );
+        $ctx = new CheckContext(sys_get_temp_dir(), ['app'], [], $out, false, false, false, '0.0.0', 'none', [], [], 'quality', 'low', false, 'error');
         $checker = new class implements CheckerInterface {
             public function name(): string
             {
@@ -233,10 +202,10 @@ final class CheckRunnerTest extends TestCase
             public function run(CheckContext $ctx): CheckResult
             {
                 return new CheckResult('stub', 'failed', 0.01, [
-                    new Issue('R_INFO', 'message', 'file.php', 1, Severity::Info, 'custom'),
-                    new Issue('R_WARN', 'message', 'file.php', 2, Severity::Warning, 'custom'),
-                    new Issue('R_ERR', 'message', 'file.php', 3, Severity::Error, 'custom'),
-                    new Issue('R_CRIT', 'message', 'file.php', 4, Severity::Critical, 'custom'),
+                    new Issue('R_INFO', 'message', 'file.php', 1, Severity::$Info, 'custom'),
+                    new Issue('R_WARN', 'message', 'file.php', 2, Severity::$Warning, 'custom'),
+                    new Issue('R_ERR', 'message', 'file.php', 3, Severity::$Error, 'custom'),
+                    new Issue('R_CRIT', 'message', 'file.php', 4, Severity::$Critical, 'custom'),
                 ], null, null);
             }
 
@@ -258,14 +227,7 @@ final class CheckRunnerTest extends TestCase
     public function testMinSeverityUnknownValueShowsEverything(): void
     {
         $out = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'reports-sev-' . uniqid('', true);
-        $ctx = new CheckContext(
-            sys_get_temp_dir(),
-            ['app'],
-            [],
-            $out,
-            failOn: 'none',
-            minSeverity: 'bogus',
-        );
+        $ctx = new CheckContext(sys_get_temp_dir(), ['app'], [], $out, false, false, false, '0.0.0', 'none', [], [], 'quality', 'low', false, 'bogus');
         $checker = new class implements CheckerInterface {
             public function name(): string
             {
@@ -285,7 +247,7 @@ final class CheckRunnerTest extends TestCase
             public function run(CheckContext $ctx): CheckResult
             {
                 return new CheckResult('stub', 'failed', 0.01, [
-                    new Issue('R_INFO', 'message', 'file.php', 1, Severity::Info, 'custom'),
+                    new Issue('R_INFO', 'message', 'file.php', 1, Severity::$Info, 'custom'),
                 ], null, null);
             }
 
@@ -368,7 +330,7 @@ final class CheckRunnerTest extends TestCase
         mkdir($outputDir, 0777, true);
 
         try {
-            $ctx = new CheckContext($base, ['app'], [], $outputDir, failOn: 'error');
+            $ctx = new CheckContext($base, ['app'], [], $outputDir, false, false, false, '0.0.0', 'error');
 
             $checker = new class implements CheckerInterface {
                 public int $runs = 0;
@@ -418,7 +380,7 @@ final class CheckRunnerTest extends TestCase
             self::assertSame('first-run', $second[0]->summary, 'the cached result must be served');
 
             // --no-cache on the same context must bypass it in the other direction.
-            $bypass = new CheckContext($base, ['app'], [], $outputDir, noCache: true, failOn: 'error');
+            $bypass = new CheckContext($base, ['app'], [], $outputDir, true, false, false, '0.0.0', 'error');
             $third = (new CheckRunner($bypass))->run([$checker]);
 
             self::assertSame(2, $checker->runs);
@@ -440,7 +402,7 @@ final class CheckRunnerTest extends TestCase
         mkdir($outputDir, 0777, true);
 
         try {
-            $ctx = new CheckContext($base, ['app'], [], $outputDir, failOn: 'error');
+            $ctx = new CheckContext($base, ['app'], [], $outputDir, false, false, false, '0.0.0', 'error');
             $checker = new class implements CheckerInterface {
                 public int $runs = 0;
 

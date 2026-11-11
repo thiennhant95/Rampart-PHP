@@ -109,7 +109,7 @@ final class ModelTypeResolver
      */
     private static function resolveName(string $name, array $uses, ?string $namespace): string
     {
-        if (str_starts_with($name, '\\')) {
+        if (strncmp($name, '\\', strlen('\\')) === 0) {
             return ltrim($name, '\\');
         }
         $pos = strpos($name, '\\');

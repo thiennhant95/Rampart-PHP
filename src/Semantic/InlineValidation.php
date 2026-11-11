@@ -51,7 +51,7 @@ final class InlineValidation
         $makes = $finder->find($method->stmts, static function (Node $node): bool {
             return $node instanceof Node\Expr\StaticCall
                 && $node->class instanceof Node\Name
-                && str_ends_with($node->class->toString(), 'Validator')
+                && substr_compare($node->class->toString(), 'Validator', -strlen('Validator')) === 0
                 && $node->name instanceof Node\Identifier
                 && strtolower($node->name->toString()) === 'make';
         });

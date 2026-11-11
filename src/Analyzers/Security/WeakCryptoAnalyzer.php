@@ -70,9 +70,9 @@ final class WeakCryptoAnalyzer extends AbstractAnalyzer
                     ),
                     $file,
                     $call->getStartLine(),
-                    Severity::Warning,
+                    Severity::$Warning,
                     ['function' => $name, 'cipher' => $argument->value],
-                    Confidence::High
+                    Confidence::$High
                 );
             }
         }
@@ -83,7 +83,7 @@ final class WeakCryptoAnalyzer extends AbstractAnalyzer
     private function isWeak(string $cipher): bool
     {
         foreach (self::WEAK_NEEDLES as $needle) {
-            if (str_contains($cipher, $needle)) {
+            if (strpos($cipher, $needle) !== false) {
                 return true;
             }
         }

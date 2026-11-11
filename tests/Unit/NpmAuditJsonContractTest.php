@@ -53,7 +53,7 @@ final class NpmAuditJsonContractTest extends TestCase
         $issues = $this->parse($json);
         self::assertCount(1, $issues);
         self::assertSame('NPM_AUDIT', $issues[0]->rule);
-        self::assertSame(Severity::Error, $issues[0]->severity);
+        self::assertSame(Severity::$Error, $issues[0]->severity);
         self::assertStringContainsString('lodash', $issues[0]->message);
     }
 
@@ -69,10 +69,10 @@ final class NpmAuditJsonContractTest extends TestCase
         ]);
         $issues = $this->parse($json);
         self::assertCount(4, $issues);
-        self::assertSame(Severity::Critical, $issues[0]->severity);
-        self::assertSame(Severity::Warning, $issues[1]->severity);
-        self::assertSame(Severity::Info, $issues[2]->severity);
-        self::assertSame(Severity::Info, $issues[3]->severity);
+        self::assertSame(Severity::$Critical, $issues[0]->severity);
+        self::assertSame(Severity::$Warning, $issues[1]->severity);
+        self::assertSame(Severity::$Info, $issues[2]->severity);
+        self::assertSame(Severity::$Info, $issues[3]->severity);
     }
 
     public function testParsesNpmV6AdvisoriesWithModuleName(): void
@@ -104,6 +104,6 @@ final class NpmAuditJsonContractTest extends TestCase
     {
         $issues = $this->parse(json_encode(['vulnerabilities' => ['leftpad' => ['via' => []]]]));
         self::assertCount(1, $issues);
-        self::assertSame(Severity::Warning, $issues[0]->severity);
+        self::assertSame(Severity::$Warning, $issues[0]->severity);
     }
 }

@@ -20,7 +20,7 @@ final class IssueRoundTripTest extends TestCase
             'taint',
             '/app/Http/Controllers/UserController.php',
             42,
-            Severity::Critical,
+            Severity::$Critical,
             'custom',
             ['method' => 'select']
         );
@@ -38,9 +38,9 @@ final class IssueRoundTripTest extends TestCase
 
     public function testConfidenceScoreMapping(): void
     {
-        $high = new Issue('R', 'm', 'f.php', 1, Severity::Error, 'custom', [], Confidence::High);
-        $medium = new Issue('R', 'm', 'f.php', 1, Severity::Error, 'custom', [], Confidence::Medium);
-        $low = new Issue('R', 'm', 'f.php', 1, Severity::Error, 'custom', [], Confidence::Low);
+        $high = new Issue('R', 'm', 'f.php', 1, Severity::$Error, 'custom', [], Confidence::$High);
+        $medium = new Issue('R', 'm', 'f.php', 1, Severity::$Error, 'custom', [], Confidence::$Medium);
+        $low = new Issue('R', 'm', 'f.php', 1, Severity::$Error, 'custom', [], Confidence::$Low);
 
         self::assertSame(1.0, $high->confidenceScore());
         self::assertSame(0.5, $medium->confidenceScore());
@@ -54,7 +54,7 @@ final class IssueRoundTripTest extends TestCase
             'custom',
             'failed',
             1.25,
-            [new Issue('A', 'b', 'c.php', 1, Severity::Warning, 'custom')],
+            [new Issue('A', 'b', 'c.php', 1, Severity::$Warning, 'custom')],
             'raw',
             'summary'
         );
@@ -69,7 +69,7 @@ final class IssueRoundTripTest extends TestCase
 
     public function testContextDefaults(): void
     {
-        $ctx = new CheckContext('/base', ['app'], [], '/base/reports', noCache: true);
+        $ctx = new CheckContext('/base', ['app'], [], '/base/reports', true);
 
         self::assertTrue($ctx->noCache);
         self::assertFalse($ctx->ci);

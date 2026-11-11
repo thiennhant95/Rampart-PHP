@@ -84,7 +84,7 @@ final class PathExcluder
         $lowerPath = strtolower($normalized);
 
         foreach ($this->patterns as $pattern) {
-            if (str_contains($pattern, '*') || str_contains($pattern, '?')) {
+            if (strpos($pattern, '*') !== false || strpos($pattern, '?') !== false) {
                 if (fnmatch(strtolower($pattern), $lowerPath)) {
                     return true;
                 }
@@ -92,7 +92,7 @@ final class PathExcluder
             }
 
             $needle = '/' . trim(strtolower($pattern), '/') . '/';
-            if (str_contains($lowerPath, $needle)) {
+            if (strpos($lowerPath, $needle) !== false) {
                 return true;
             }
         }

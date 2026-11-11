@@ -187,7 +187,7 @@ final class PhpcsChecker extends AbstractProcessChecker
                     (string) ($message['message'] ?? ''),
                     $file,
                     (int) ($message['line'] ?? 0) > 0 ? (int) $message['line'] : null,
-                    strtoupper($type) === 'WARNING' ? Severity::Warning : Severity::Error,
+                    strtoupper($type) === 'WARNING' ? Severity::$Warning : Severity::$Error,
                     'phpcs',
                     ['type' => strtoupper($type), 'severity' => $severity, 'column' => $message['column'] ?? null]
                 );

@@ -88,23 +88,8 @@ final class CheckContext
      * @param list<string> $only
      * @param list<string> $exclude
      */
-    public function __construct(
-        string $basePath,
-        array $paths,
-        array $config,
-        string $outputDir,
-        bool $noCache = false,
-        bool $ci = false,
-        bool $quiet = false,
-        string $packageVersion = '0.0.0',
-        string $failOn = 'error',
-        array $only = [],
-        array $exclude = [],
-        string $tier = 'quality',
-        string $minConfidence = 'low',
-        bool $noAutoInstall = false,
-        string $minSeverity = 'info',
-    ) {
+    public function __construct(string $basePath, array $paths, array $config, string $outputDir, bool $noCache = false, bool $ci = false, bool $quiet = false, string $packageVersion = '0.0.0', string $failOn = 'error', array $only = [], array $exclude = [], string $tier = 'quality', string $minConfidence = 'low', bool $noAutoInstall = false, string $minSeverity = 'info')
+    {
         $this->basePath = rtrim($basePath, '/\\');
         $this->paths = array_values(array_filter($paths, static fn ($p): bool => is_string($p) && $p !== ''));
         $this->config = $config;
@@ -147,7 +132,7 @@ final class CheckContext
             return false;
         }
 
-        if (DIRECTORY_SEPARATOR === '/' && str_starts_with($path, '/')) {
+        if (DIRECTORY_SEPARATOR === '/' && strncmp($path, '/', strlen('/')) === 0) {
             return true;
         }
 
@@ -155,6 +140,6 @@ final class CheckContext
             return true;
         }
 
-        return str_starts_with($path, '\\\\');
+        return strncmp($path, '\\\\', strlen('\\\\')) === 0;
     }
 }

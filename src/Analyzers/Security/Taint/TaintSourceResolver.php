@@ -76,7 +76,7 @@ final class TaintSourceResolver
     {
         $name = ltrim($name, '\\');
 
-        if (str_contains($name, '\\')) {
+        if (strpos($name, '\\') !== false) {
             return $this->normalize($name);
         }
 

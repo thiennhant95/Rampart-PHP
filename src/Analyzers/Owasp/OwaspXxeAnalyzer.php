@@ -79,7 +79,7 @@ final class OwaspXxeAnalyzer extends AbstractAnalyzer
                 sprintf('Potential XXE: XML sink %s used without external entity protection.', $sink),
                 $file,
                 $call->getStartLine(),
-                Severity::Error,
+                Severity::$Error,
                 ['sink' => $sink]
             );
         }
@@ -109,8 +109,8 @@ final class OwaspXxeAnalyzer extends AbstractAnalyzer
 
             if (
                 in_array($class, self::NEW_SINKS, true)
-                || str_ends_with($class, '\\' . $lastNewSink)
-                || str_ends_with($class, '\\SimpleXMLElement')
+                || substr_compare($class, '\\' . $lastNewSink, -strlen('\\' . $lastNewSink)) === 0
+                || substr_compare($class, '\\SimpleXMLElement', -strlen('\\SimpleXMLElement')) === 0
             ) {
                 return 'new ' . $class . '()';
             }
@@ -147,13 +147,13 @@ final class OwaspXxeAnalyzer extends AbstractAnalyzer
     {
         $normalized = ltrim($class, '\\');
 
-        return $normalized === 'XMLReader' || str_ends_with($normalized, '\\XMLReader');
+        return $normalized === 'XMLReader' || substr_compare($normalized, '\\XMLReader', -strlen('\\XMLReader')) === 0;
     }
 
     private function isDomDocumentTarget(Node\Expr $expr): bool
     {
         if ($expr instanceof Node\Expr\New_ && $expr->class instanceof Node\Name) {
-            return $expr->class->toString() === 'DOMDocument' || str_ends_with($expr->class->toString(), '\\DOMDocument');
+            return $expr->class->toString() === 'DOMDocument' || substr_compare($expr->class->toString(), '\\DOMDocument', -strlen('\\DOMDocument')) === 0;
         }
 
         if ($expr instanceof Node\Expr\Variable) {

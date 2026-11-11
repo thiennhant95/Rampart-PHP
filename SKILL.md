@@ -35,7 +35,7 @@ error. Use `--fail-on=none` to review without failing.
 
 ## Notes
 
-- PHP 8.1+ to run the tool; the target is parsed, not executed.
+- PHP 7.4+ to run the tool; the target is parsed, not executed.
 - `custom` works without the target's `vendor/`; `phpcs`/`phpstan`/`phpunit`
   need it.
 - `--ignore=RULE` drops a noisy rule from the report.

@@ -90,7 +90,7 @@ final class PhpstanJsonContractTest extends TestCase
         self::assertSame('C:\\app\\Sample.php', $issues[0]->file);
         self::assertSame(13, $issues[0]->line);
         self::assertSame(15, $issues[1]->line);
-        self::assertSame(Severity::Error, $issues[0]->severity);
+        self::assertSame(Severity::$Error, $issues[0]->severity);
         self::assertSame('phpstan', $issues[0]->source);
         self::assertSame(['ignorable' => true], $issues[0]->metadata);
         self::assertSame('Instantiated class App\\Contracts\\MissingContract not found.', $issues[0]->message);

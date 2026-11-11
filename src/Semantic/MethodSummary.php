@@ -31,25 +31,74 @@ final class MethodSummary
     public const OP_VALIDATED = 'validated';
 
     public const OP_SAFE = 'safe';
-
+    /**
+     * @readonly
+     */
+    public string $class;
+    /**
+     * @readonly
+     */
+    public string $method;
+    /**
+     * @readonly
+     */
+    public string $kind;
+    /**
+     * @var list<string>
+     * @readonly
+     */
+    public array $params;
+    /**
+     * @readonly
+     */
+    public ?int $paramIndex;
+    /**
+     * @readonly
+     */
+    public ?string $operation;
+    /**
+     * @var list<string>|null
+     * @readonly
+     */
+    public ?array $fields;
+    /**
+     * @readonly
+     */
+    public string $confidence;
+    /**
+     * @readonly
+     */
+    public string $evidence;
+    /**
+     * @readonly
+     */
+    public ?string $unresolvedReason;
+    /**
+     * @readonly
+     */
+    public ?string $declaringClass = null;
+    /**
+     * @readonly
+     */
+    public string $visibility = 'public';
     /**
      * @param list<string> $params parameter names in order
      * @param list<string>|null $fields literal field-set (only/except)
      */
-    public function __construct(
-        public readonly string $class,
-        public readonly string $method,
-        public readonly string $kind,
-        public readonly array $params,
-        public readonly ?int $paramIndex,
-        public readonly ?string $operation,
-        public readonly ?array $fields,
-        public readonly string $confidence,
-        public readonly string $evidence,
-        public readonly ?string $unresolvedReason,
-        public readonly ?string $declaringClass = null,
-        public readonly string $visibility = 'public',
-    ) {
+    public function __construct(string $class, string $method, string $kind, array $params, ?int $paramIndex, ?string $operation, ?array $fields, string $confidence, string $evidence, ?string $unresolvedReason, ?string $declaringClass = null, string $visibility = 'public')
+    {
+        $this->class = $class;
+        $this->method = $method;
+        $this->kind = $kind;
+        $this->params = $params;
+        $this->paramIndex = $paramIndex;
+        $this->operation = $operation;
+        $this->fields = $fields;
+        $this->confidence = $confidence;
+        $this->evidence = $evidence;
+        $this->unresolvedReason = $unresolvedReason;
+        $this->declaringClass = $declaringClass;
+        $this->visibility = $visibility;
     }
 
     public static function unknown(

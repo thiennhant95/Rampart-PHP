@@ -181,7 +181,7 @@ final class LaravelAnalyzerTest extends TestCase
 
         self::assertNotEmpty($issues);
         self::assertSame('ROUTE_MISSING_VALIDATION', $issues[0]->rule);
-        self::assertSame(Severity::Warning, $issues[0]->severity);
+        self::assertSame(Severity::$Warning, $issues[0]->severity);
     }
 
     public function testRouteValidationSkipsFormRequestParam(): void

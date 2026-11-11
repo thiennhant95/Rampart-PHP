@@ -111,7 +111,7 @@ final class OwaspCommandInjectionAnalyzer extends AbstractAnalyzer
                             'Potential command injection: user input flows into backtick shell execution.',
                             $file,
                             $call->getStartLine(),
-                            Severity::Critical,
+                            Severity::$Critical,
                             ['sink' => '``']
                         );
                         break;
@@ -145,7 +145,7 @@ final class OwaspCommandInjectionAnalyzer extends AbstractAnalyzer
                     sprintf('Potential command injection: user input flows into %s().', $fn),
                     $file,
                     $call->getStartLine(),
-                    Severity::Critical,
+                    Severity::$Critical,
                     ['sink' => $fn . '()']
                 );
                 continue;
@@ -165,7 +165,7 @@ final class OwaspCommandInjectionAnalyzer extends AbstractAnalyzer
                             'Potential command injection: user input flows into Process::fromShellCommandline().',
                             $file,
                             $call->getStartLine(),
-                            Severity::Critical,
+                            Severity::$Critical,
                             ['sink' => 'Process::fromShellCommandline()']
                         );
                         break;
@@ -190,7 +190,7 @@ final class OwaspCommandInjectionAnalyzer extends AbstractAnalyzer
                             'Potential command injection: user input flows into Symfony Process.',
                             $file,
                             $call->getStartLine(),
-                            Severity::Critical,
+                            Severity::$Critical,
                             ['sink' => 'new Process()']
                         );
                         break;
@@ -421,10 +421,10 @@ final class OwaspCommandInjectionAnalyzer extends AbstractAnalyzer
     }
 
     /**
-     * @param Node|list<Node> $scope
+     * @param \PhpParser\Node|mixed[] $scope
      * @return array<string, true>
      */
-    private function safeAssignedVars(Node|array $scope): array
+    private function safeAssignedVars($scope): array
     {
         $vars = [];
         $assigns = $this->finder()->find($scope, static function (Node $node): bool {
@@ -453,10 +453,10 @@ final class OwaspCommandInjectionAnalyzer extends AbstractAnalyzer
      * class constant, e.g. `foreach (self::SERVICES as $svc)`) are
      * deploy-time values, never request input.
      *
-     * @param Node|list<Node> $scope
+     * @param \PhpParser\Node|mixed[] $scope
      * @return array<string, true>
      */
-    private function safeForeachVars(Node|array $scope): array
+    private function safeForeachVars($scope): array
     {
         $vars = [];
         $loops = $this->finder()->find($scope, static function (Node $node): bool {
@@ -666,11 +666,12 @@ final class OwaspCommandInjectionAnalyzer extends AbstractAnalyzer
 
     /**
      * @param list<Node> $nodes
+     * @return \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_|null
      */
     private function enclosingFunction(
         Node $call,
         array $nodes
-    ): Node\Stmt\ClassMethod|Node\Stmt\Function_|null {
+    ) {
         $target = spl_object_id($call);
         $funcs = $this->finder()->find($nodes, static function (Node $node): bool {
             return $node instanceof Node\Stmt\ClassMethod || $node instanceof Node\Stmt\Function_;
@@ -691,7 +692,10 @@ final class OwaspCommandInjectionAnalyzer extends AbstractAnalyzer
         return null;
     }
 
-    private function isArrayType(Node\Name|Node\Identifier|Node\ComplexType|null $type): bool
+    /**
+     * @param \PhpParser\Node\Name|\PhpParser\Node\Identifier|\PhpParser\Node\ComplexType|null $type
+     */
+    private function isArrayType($type): bool
     {
         if ($type instanceof Node\Identifier) {
             return strtolower($type->toString()) === 'array';
@@ -766,10 +770,10 @@ final class OwaspCommandInjectionAnalyzer extends AbstractAnalyzer
     }
 
     /**
-     * @param Node|list<Node> $scope
+     * @param \PhpParser\Node|mixed[] $scope
      * @return array<string, true>
      */
-    private function arrayAssignedVars(Node|array $scope): array
+    private function arrayAssignedVars($scope): array
     {
         $vars = [];
         $assigns = $this->finder()->find($scope, static function (Node $node): bool {

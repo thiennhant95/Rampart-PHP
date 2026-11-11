@@ -55,7 +55,7 @@ final class RoguePhpAnalyzerTest extends TestCase
         $issues = $this->analyzer($this->tmp)->analyze([]);
         self::assertCount(1, $issues);
         self::assertSame('ROGUE_PHP', $issues[0]->rule);
-        self::assertSame(Severity::Critical, $issues[0]->severity);
+        self::assertSame(Severity::$Critical, $issues[0]->severity);
     }
 
     public function testIgnoresIndexPhpAndNonPhp(): void

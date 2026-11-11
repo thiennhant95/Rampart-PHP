@@ -40,7 +40,7 @@ final class OwaspPathTraversalAnalyzerTest extends TestCase
         $issues = (new OwaspPathTraversalAnalyzer())->analyze([$file]);
 
         self::assertSame('OWASP_PATH_TRAVERSAL', $this->rules($issues)[0] ?? null);
-        self::assertSame(Severity::Error, $issues[0]->severity ?? null);
+        self::assertSame(Severity::$Error, $issues[0]->severity ?? null);
     }
 
     public function testFlagsFileGetContentsWithVariable(): void
@@ -53,7 +53,7 @@ final class OwaspPathTraversalAnalyzerTest extends TestCase
         $issues = (new OwaspPathTraversalAnalyzer())->analyze([$file]);
 
         self::assertSame('OWASP_PATH_TRAVERSAL', $this->rules($issues)[0] ?? null);
-        self::assertSame(Severity::Error, $issues[0]->severity ?? null);
+        self::assertSame(Severity::$Error, $issues[0]->severity ?? null);
     }
 
     public function testFlagsFileFacadeGetWithRequestDate(): void

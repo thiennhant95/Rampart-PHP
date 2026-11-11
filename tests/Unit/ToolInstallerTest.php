@@ -15,18 +15,12 @@ final class ToolInstallerTest extends TestCase
      */
     private function context(bool $noAutoInstall = false, array $config = []): CheckContext
     {
-        return new CheckContext(
-            sys_get_temp_dir(),
-            ['app'],
-            $config,
-            sys_get_temp_dir() . '/r',
-            noAutoInstall: $noAutoInstall,
-        );
+        return new CheckContext(sys_get_temp_dir(), ['app'], $config, sys_get_temp_dir() . '/r', false, false, false, '0.0.0', 'error', [], [], 'quality', 'low', $noAutoInstall);
     }
 
     public function testCanInstallKnownComposerTools(): void
     {
-        $installer = new ToolInstaller($this->context(config: ['auto_install_tools' => true]));
+        $installer = new ToolInstaller($this->context(false, ['auto_install_tools' => true]));
 
         self::assertTrue($installer->canInstall('phpcs'));
         self::assertTrue($installer->canInstall('phpstan'));
@@ -36,7 +30,7 @@ final class ToolInstallerTest extends TestCase
 
     public function testCannotInstallUnknownTool(): void
     {
-        $installer = new ToolInstaller($this->context(config: ['auto_install_tools' => true]));
+        $installer = new ToolInstaller($this->context(false, ['auto_install_tools' => true]));
 
         self::assertFalse($installer->canInstall('grumphp'));
         self::assertFalse($installer->canInstall('custom'));
@@ -44,7 +38,7 @@ final class ToolInstallerTest extends TestCase
 
     public function testDisabledByNoAutoInstallFlag(): void
     {
-        $installer = new ToolInstaller($this->context(noAutoInstall: true));
+        $installer = new ToolInstaller($this->context(true));
 
         self::assertFalse($installer->enabled());
         self::assertFalse($installer->canInstall('phpcs'));
@@ -52,7 +46,7 @@ final class ToolInstallerTest extends TestCase
 
     public function testDisabledByConfig(): void
     {
-        $installer = new ToolInstaller($this->context(config: ['auto_install_tools' => false]));
+        $installer = new ToolInstaller($this->context(false, ['auto_install_tools' => false]));
 
         self::assertFalse($installer->enabled());
         self::assertFalse($installer->canInstall('phpcs'), 'A disabled installer must not offer to install.');
@@ -77,7 +71,7 @@ final class ToolInstallerTest extends TestCase
 
     public function testEnabledExplicitlyByConfig(): void
     {
-        $installer = new ToolInstaller($this->context(config: ['auto_install_tools' => true]));
+        $installer = new ToolInstaller($this->context(false, ['auto_install_tools' => true]));
 
         self::assertTrue($installer->enabled());
         self::assertTrue($installer->canInstall('phpcs'));

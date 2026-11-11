@@ -39,7 +39,10 @@ final class SarifReporterTest extends TestCase
             ['app'],
             [],
             $this->tempDir,
-            packageVersion: '1.0.0'
+            false,
+            false,
+            false,
+            '1.0.0'
         );
 
         (new SarifReporter())->render($results, $ctx);
@@ -77,27 +80,27 @@ final class SarifReporterTest extends TestCase
                     'Tainted input flows into select().',
                     '/project/app/Http/Controllers/UserController.php',
                     14,
-                    Severity::Critical,
+                    Severity::$Critical,
                     'custom',
                     [],
-                    Confidence::High
+                    Confidence::$High
                 ),
                 new Issue(
                     'TODO_FIXME',
                     'Leftover TODO marker.',
                     '/project/app/Services/OrderService.php',
                     3,
-                    Severity::Info,
+                    Severity::$Info,
                     'custom',
                     [],
-                    Confidence::Low
+                    Confidence::$Low
                 ),
                 new Issue(
                     'LARAVEL_PITFALL',
                     'dd() left in production code.',
                     null,
                     null,
-                    Severity::Warning,
+                    Severity::$Warning,
                     'custom'
                 ),
             ], null, null),
@@ -133,8 +136,8 @@ final class SarifReporterTest extends TestCase
     {
         $results = [
             new CheckResult('custom', 'failed', 0.1, [
-                new Issue('OWASP_SSRF', 'URL from user input.', '/project/a.php', 1, Severity::Warning, 'custom'),
-                new Issue('OWASP_SSRF', 'URL from user input again.', '/project/b.php', 2, Severity::Error, 'custom'),
+                new Issue('OWASP_SSRF', 'URL from user input.', '/project/a.php', 1, Severity::$Warning, 'custom'),
+                new Issue('OWASP_SSRF', 'URL from user input again.', '/project/b.php', 2, Severity::$Error, 'custom'),
             ], null, null),
         ];
 
@@ -163,7 +166,7 @@ final class SarifReporterTest extends TestCase
         $this->tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'qc-sarif-' . uniqid('', true);
         @mkdir($this->tempDir, 0777, true);
 
-        $ctx = new CheckContext('/project', ['app'], [], $this->tempDir, packageVersion: '1.0.0');
+        $ctx = new CheckContext('/project', ['app'], [], $this->tempDir, false, false, false, '1.0.0');
         $ctx->exitCode = 1;
 
         (new SarifReporter())->render($results, $ctx);
@@ -190,7 +193,10 @@ final class SarifReporterTest extends TestCase
                 ['app'],
                 ['html' => ['repo_url' => 'https://github.com/acme/demo', 'branch' => 'main']],
                 $customDir,
-                packageVersion: '1.0.0'
+                false,
+                false,
+                false,
+                '1.0.0'
             );
             (new SarifReporter())->render([], $customCtx);
             $customPayload = json_decode(
@@ -202,7 +208,7 @@ final class SarifReporterTest extends TestCase
                 $customPayload['runs'][0]['tool']['driver']['informationUri']
             );
 
-            $fallbackCtx = new CheckContext('/project', ['app'], [], $fallbackDir, packageVersion: '1.0.0');
+            $fallbackCtx = new CheckContext('/project', ['app'], [], $fallbackDir, false, false, false, '1.0.0');
             (new SarifReporter())->render([], $fallbackCtx);
             $fallbackPayload = json_decode(
                 (string) file_get_contents($fallbackDir . DIRECTORY_SEPARATOR . 'rampart-report.sarif'),

@@ -45,7 +45,7 @@ final class TestCoverageAnalyzerTest extends TestCase
 
         self::assertNotEmpty($issues);
         self::assertSame('MISSING_CONTROLLER_TEST', $issues[0]->rule);
-        self::assertSame(Severity::Warning, $issues[0]->severity);
+        self::assertSame(Severity::$Warning, $issues[0]->severity);
     }
 
     public function testControllerWithTestPasses(): void
@@ -121,8 +121,8 @@ final class TestCoverageAnalyzerTest extends TestCase
 
         self::assertNotEmpty($svcIssues);
         self::assertSame('MISSING_SERVICE_TEST', $svcIssues[0]->rule);
-        self::assertSame(Severity::Info, $svcIssues[0]->severity);
-        self::assertSame(Confidence::Low, $svcIssues[0]->confidence);
+        self::assertSame(Severity::$Info, $svcIssues[0]->severity);
+        self::assertSame(Confidence::$Low, $svcIssues[0]->confidence);
         self::assertStringContainsString('No directly associated test detected', $svcIssues[0]->message);
 
         $ctrl = $this->controller('app/Http/Controllers/PinController.php', 'App\Http\Controllers', 'PinController');
@@ -130,8 +130,8 @@ final class TestCoverageAnalyzerTest extends TestCase
 
         self::assertNotEmpty($ctrlIssues);
         self::assertSame('MISSING_CONTROLLER_TEST', $ctrlIssues[0]->rule);
-        self::assertSame(Severity::Info, $ctrlIssues[0]->severity);
-        self::assertSame(Confidence::Low, $ctrlIssues[0]->confidence);
+        self::assertSame(Severity::$Info, $ctrlIssues[0]->severity);
+        self::assertSame(Confidence::$Low, $ctrlIssues[0]->confidence);
         self::assertStringContainsString('No directly associated', $ctrlIssues[0]->message);
     }
 }

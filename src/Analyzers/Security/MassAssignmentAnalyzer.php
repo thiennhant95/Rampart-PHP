@@ -192,7 +192,7 @@ final class MassAssignmentAnalyzer implements ScanContextAware
                     'Mass assignment protection is disabled globally via Model::unguard() — every attribute becomes fillable.',
                     $file,
                     $call->getStartLine(),
-                    Severity::Error,
+                    Severity::$Error,
                     'custom',
                     ['method' => $method]
                 );
@@ -279,7 +279,7 @@ final class MassAssignmentAnalyzer implements ScanContextAware
                 'forceFill() with untrusted request input bypasses mass assignment protection ($fillable/$guarded are ignored) — use fill() with $fillable or validated().',
                 $file,
                 $call->getStartLine(),
-                Severity::Error,
+                Severity::$Error,
                 'custom',
                 [
                     'method' => $method,
@@ -395,7 +395,7 @@ final class MassAssignmentAnalyzer implements ScanContextAware
             ),
             $file,
             $call->getStartLine(),
-            Severity::Error,
+            Severity::$Error,
             'custom',
             [
                 'method' => $method,
@@ -421,9 +421,10 @@ final class MassAssignmentAnalyzer implements ScanContextAware
      * @param list<Node> $ast
      * @param array<int, Node\Stmt\ClassMethod|Node\Stmt\Function_> $funcs
      * @param array<string, string> $uses
+     * @param \PhpParser\Node\Expr\StaticCall|\PhpParser\Node\Expr\MethodCall $call
      */
     private function decideCall(
-        Node\Expr\StaticCall|Node\Expr\MethodCall $call,
+        $call,
         array $args,
         string $method,
         array $ast,
@@ -482,9 +483,10 @@ final class MassAssignmentAnalyzer implements ScanContextAware
      * @param list<Node> $ast
      * @param array<int, Node\Stmt\ClassMethod|Node\Stmt\Function_> $funcs
      * @param array<string, string> $uses
+     * @param \PhpParser\Node\Expr\StaticCall|\PhpParser\Node\Expr\MethodCall $call
      */
     private function decideSink(
-        Node\Expr\StaticCall|Node\Expr\MethodCall $call,
+        $call,
         Node\Expr $arg,
         string $method,
         array $ast,
@@ -509,9 +511,10 @@ final class MassAssignmentAnalyzer implements ScanContextAware
 
     /**
      * @param array<string, string> $uses
+     * @param \PhpParser\Node\Expr\StaticCall|\PhpParser\Node\Expr\MethodCall $call
      */
     private function resolveSinkModel(
-        Node\Expr\StaticCall|Node\Expr\MethodCall $call,
+        $call,
         Node\Stmt\ClassMethod $func,
         array $uses,
         ?string $namespace
@@ -535,7 +538,7 @@ final class MassAssignmentAnalyzer implements ScanContextAware
      */
     private function resolveName(string $name, array $uses, ?string $namespace): string
     {
-        if (str_starts_with($name, '\\')) {
+        if (strncmp($name, '\\', strlen('\\')) === 0) {
             return ltrim($name, '\\');
         }
         $pos = strpos($name, '\\');
@@ -580,10 +583,10 @@ final class MassAssignmentAnalyzer implements ScanContextAware
                 ),
                 $file,
                 $line,
-                Severity::Error,
+                Severity::$Error,
                 'custom',
                 $metadata,
-                Confidence::High
+                Confidence::$High
             );
         }
 
@@ -598,10 +601,10 @@ final class MassAssignmentAnalyzer implements ScanContextAware
             ),
             $file,
             $line,
-            Severity::Warning,
+            Severity::$Warning,
             'custom',
             $metadata,
-            Confidence::Medium
+            Confidence::$Medium
         );
     }
 
@@ -619,10 +622,10 @@ final class MassAssignmentAnalyzer implements ScanContextAware
     private function protectionPhrase(MassAssignmentDecision $decision): string
     {
         foreach ($decision->evidence as $step) {
-            if (str_contains($step, 'force-bypass')) {
+            if (strpos($step, 'force-bypass') !== false) {
                 return 'a guard-bypassing sink ($fillable/$guarded are ignored)';
             }
-            if (str_contains($step, 'globally unguarded')) {
+            if (strpos($step, 'globally unguarded') !== false) {
                 return 'globally disabled mass assignment protection';
             }
         }
@@ -643,7 +646,7 @@ final class MassAssignmentAnalyzer implements ScanContextAware
     {
         $bypass = false;
         foreach ($decision->evidence as $step) {
-            if (str_contains($step, 'force-bypass')) {
+            if (strpos($step, 'force-bypass') !== false) {
                 $bypass = true;
                 break;
             }
@@ -666,13 +669,18 @@ final class MassAssignmentAnalyzer implements ScanContextAware
 
     private function protectionType(string $assignability): string
     {
-        return match ($assignability) {
-            ModelMetadata::FILLABLE => 'fillable',
-            ModelMetadata::GUARDED_ALL => 'guarded',
-            ModelMetadata::GUARDED_LIST => 'guarded',
-            ModelMetadata::UNGUARDED => 'unguarded',
-            default => 'unknown',
-        };
+        switch ($assignability) {
+            case ModelMetadata::FILLABLE:
+                return 'fillable';
+            case ModelMetadata::GUARDED_ALL:
+                return 'guarded';
+            case ModelMetadata::GUARDED_LIST:
+                return 'guarded';
+            case ModelMetadata::UNGUARDED:
+                return 'unguarded';
+            default:
+                return 'unknown';
+        }
     }
 
     /**
@@ -682,9 +690,10 @@ final class MassAssignmentAnalyzer implements ScanContextAware
      * @param list<Node> $ast
      * @param array<int, Node\Stmt\ClassMethod|Node\Stmt\Function_> $funcs
      * @return array{status: string, fields: list<string>|null, excluded: list<string>|null, force_bypass: bool, source: string, sink: string, trace: list<array{kind: string, detail: string, line: int|null}>}|null
+     * @param \PhpParser\Node\Expr\StaticCall|\PhpParser\Node\Expr\MethodCall $call
      */
     private function flowProvenance(
-        Node\Expr\StaticCall|Node\Expr\MethodCall $call,
+        $call,
         Node\Expr $arg,
         string $method,
         array $ast,
@@ -706,8 +715,9 @@ final class MassAssignmentAnalyzer implements ScanContextAware
      * for lookup/value sinks — the first tainted later argument.
      *
      * @param list<Node\Arg|Node\VariadicPlaceholder> $args
+     * @param \PhpParser\Node\Expr\StaticCall|\PhpParser\Node\Expr\MethodCall $call
      */
-    private function taintingArg(Node\Expr\StaticCall|Node\Expr\MethodCall $call, array $args, string $method): Node\Expr
+    private function taintingArg($call, array $args, string $method): Node\Expr
     {
         $first = $args[0] ?? null;
         $firstExpr = $first instanceof Node\Arg ? $first->value : null;
@@ -788,7 +798,7 @@ final class MassAssignmentAnalyzer implements ScanContextAware
         }
         $class = ltrim($call->class->toString(), '\\');
 
-        if ($class === 'Model' || str_ends_with($class, '\\Model')) {
+        if ($class === 'Model' || substr_compare($class, '\\Model', -strlen('\\Model')) === 0) {
             return true;
         }
 
@@ -820,11 +830,11 @@ final class MassAssignmentAnalyzer implements ScanContextAware
     {
         $normalized = strtolower(str_replace('\\', '/', $file));
 
-        return str_contains($normalized, '/database/seeders/')
-            || str_contains($normalized, '/database/factories/')
-            || str_contains($normalized, '/database/migrations/')
-            || str_contains($normalized, '/tests/')
-            || str_starts_with($normalized, 'tests/');
+        return strpos($normalized, '/database/seeders/') !== false
+            || strpos($normalized, '/database/factories/') !== false
+            || strpos($normalized, '/database/migrations/') !== false
+            || strpos($normalized, '/tests/') !== false
+            || strncmp($normalized, 'tests/', strlen('tests/')) === 0;
     }
 
     private function modelExists(string $model, array $modelClassFiles): bool

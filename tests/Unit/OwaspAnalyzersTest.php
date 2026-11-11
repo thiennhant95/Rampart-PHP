@@ -46,7 +46,7 @@ final class OwaspAnalyzersTest extends TestCase
         $issues = (new OwaspAccessControlAnalyzer())->analyze([$file]);
 
         self::assertSame('OWASP_BROKEN_ACCESS_CONTROL', $this->rules($issues)[0] ?? null);
-        self::assertSame(Severity::Error, $issues[0]->severity ?? null);
+        self::assertSame(Severity::$Error, $issues[0]->severity ?? null);
     }
 
     public function testAccessControlSkipsAbstractBaseClass(): void
@@ -108,7 +108,7 @@ final class OwaspAnalyzersTest extends TestCase
         $issues = (new OwaspSsrfAnalyzer())->analyze([$file]);
 
         self::assertSame('OWASP_SSRF', $this->rules($issues)[0] ?? null);
-        self::assertSame(Severity::Error, $issues[0]->severity ?? null);
+        self::assertSame(Severity::$Error, $issues[0]->severity ?? null);
     }
 
     public function testSsrfSkipsLiteralUrl(): void
@@ -145,7 +145,7 @@ final class OwaspAnalyzersTest extends TestCase
         $issues = (new OwaspSstiAnalyzer())->analyze([$file]);
 
         self::assertSame('OWASP_SSTI', $this->rules($issues)[0] ?? null);
-        self::assertSame(Severity::Error, $issues[0]->severity ?? null);
+        self::assertSame(Severity::$Error, $issues[0]->severity ?? null);
     }
 
     public function testSstiSkipsLiteralViewTemplate(): void
@@ -278,7 +278,7 @@ final class OwaspAnalyzersTest extends TestCase
         $issues = (new OwaspMisconfigurationAnalyzer())->analyze([$file]);
 
         self::assertSame('OWASP_MISCONFIGURATION', $this->rules($issues)[0] ?? null);
-        self::assertSame(Severity::Warning, $issues[0]->severity ?? null);
+        self::assertSame(Severity::$Warning, $issues[0]->severity ?? null);
         self::assertSame('debug', $issues[0]->metadata['kind'] ?? null);
     }
 
@@ -395,7 +395,7 @@ final class OwaspAnalyzersTest extends TestCase
 
         $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
         self::assertSame('OWASP_COMMAND_INJECTION', $this->rules($issues)[0] ?? null);
-        self::assertSame(Severity::Critical, $issues[0]->severity ?? null);
+        self::assertSame(Severity::$Critical, $issues[0]->severity ?? null);
     }
 
     public function testCommandInjectionFlagsTaintedSymfonyProcess(): void
@@ -408,7 +408,7 @@ final class OwaspAnalyzersTest extends TestCase
         $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
 
         self::assertSame('OWASP_COMMAND_INJECTION', $this->rules($issues)[0] ?? null);
-        self::assertSame(Severity::Critical, $issues[0]->severity ?? null);
+        self::assertSame(Severity::$Critical, $issues[0]->severity ?? null);
     }
 
     public function testCommandInjectionSkipsLiteralCommand(): void
@@ -457,7 +457,7 @@ final class OwaspAnalyzersTest extends TestCase
         $issues = (new OwaspXxeAnalyzer())->analyze([$file]);
 
         self::assertSame('OWASP_XXE', $this->rules($issues)[0] ?? null);
-        self::assertSame(Severity::Error, $issues[0]->severity ?? null);
+        self::assertSame(Severity::$Error, $issues[0]->severity ?? null);
     }
 
     public function testXxeSkipsSinkGuardedByEntityLoader(): void
@@ -965,7 +965,7 @@ final class OwaspAnalyzersTest extends TestCase
         self::assertCount(2, $issues);
         $statusBySide = [];
         foreach ($issues as $issue) {
-            $side = str_contains((string) ($issue->file ?? ''), 'Admin') ? 'admin' : 'shop';
+            $side = strpos((string) ($issue->file ?? ''), 'Admin') !== false ? 'admin' : 'shop';
             $statusBySide[$side] = $issue->metadata['semantic_status'] ?? null;
         }
         self::assertSame('review', $statusBySide['admin'] ?? null);
@@ -1293,7 +1293,7 @@ final class OwaspAnalyzersTest extends TestCase
         $issues = (new OwaspCommandInjectionAnalyzer())->analyze([$file]);
 
         self::assertSame('OWASP_COMMAND_INJECTION', $this->rules($issues)[0] ?? null);
-        self::assertSame(Severity::Critical, $issues[0]->severity ?? null);
+        self::assertSame(Severity::$Critical, $issues[0]->severity ?? null);
     }
 
     public function testCommandInjectionSkipsBacktickLiteral(): void

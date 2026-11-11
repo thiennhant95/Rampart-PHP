@@ -60,7 +60,7 @@ class AnalyzerChecker implements CheckerInterface
             Profiler::setEnabled(true);
         }
 
-        $profile = $ctx->frameworkProfile ?? FrameworkProfile::for(Framework::PLAIN);
+        $profile = $ctx->frameworkProfile ?? FrameworkProfile::for(Framework::$PLAIN);
 
         Profiler::begin('discovery');
         [$phpFiles, $oversized, $excluded] = $this->collectPhpFiles($ctx, $profile);
@@ -137,7 +137,7 @@ class AnalyzerChecker implements CheckerInterface
 
         $status = 'passed';
         foreach ($issues as $issue) {
-            if ($issue->severity === Severity::Error || $issue->severity === Severity::Critical) {
+            if ($issue->severity === Severity::$Error || $issue->severity === Severity::$Critical) {
                 $status = 'failed';
                 break;
             }
@@ -335,7 +335,7 @@ class AnalyzerChecker implements CheckerInterface
                     continue;
                 }
                 foreach ($skipDirs as $skipDir) {
-                    if (str_contains($pathname, '/' . $skipDir . '/')) {
+                    if (strpos($pathname, '/' . $skipDir . '/') !== false) {
                         continue 2;
                     }
                 }
@@ -389,7 +389,7 @@ class AnalyzerChecker implements CheckerInterface
                     continue;
                 }
                 $lower = strtolower($file->getFilename());
-                if (!str_ends_with($lower, '.blade.php')) {
+                if (substr_compare($lower, '.blade.php', -strlen('.blade.php')) !== 0) {
                     continue;
                 }
                 if ($maxBytes > 0 && $file->getSize() > $maxBytes) {
@@ -441,9 +441,9 @@ class AnalyzerChecker implements CheckerInterface
                 $pathname = str_replace('\\', '/', $file->getPathname());
                 $lower = strtolower($pathname);
                 if (
-                    str_contains($lower, '.min.')
-                    || str_contains($lower, '/vendor/')
-                    || str_contains($lower, '/node_modules/')
+                    strpos($lower, '.min.') !== false
+                    || strpos($lower, '/vendor/') !== false
+                    || strpos($lower, '/node_modules/') !== false
                     || $excluder->excludes($pathname)
                 ) {
                     continue;
@@ -468,7 +468,7 @@ class AnalyzerChecker implements CheckerInterface
                 continue;
             }
             $normalized = str_replace('\\', '/', $abs);
-            if (str_contains($normalized, '/vendor/') || str_contains($normalized, '/node_modules/')) {
+            if (strpos($normalized, '/vendor/') !== false || strpos($normalized, '/node_modules/') !== false) {
                 continue;
             }
             if (!$excluder->excludes($normalized)) {
@@ -508,7 +508,7 @@ class AnalyzerChecker implements CheckerInterface
 
     private function profileFor(CheckContext $ctx): FrameworkProfile
     {
-        return $ctx->frameworkProfile ?? FrameworkProfile::for(Framework::PLAIN);
+        return $ctx->frameworkProfile ?? FrameworkProfile::for(Framework::$PLAIN);
     }
 
     private function maxFileBytes(CheckContext $ctx): int

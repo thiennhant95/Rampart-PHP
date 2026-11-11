@@ -115,9 +115,9 @@ final class TestCoverageAnalyzer extends AbstractAnalyzer
                 ),
                 $file,
                 $class->getStartLine(),
-                Severity::Warning,
+                Severity::$Warning,
                 ['class' => $className, 'namespace' => $namespace, 'kind' => $kind],
-                Confidence::Low
+                Confidence::$Low
             );
         }
 
@@ -126,13 +126,13 @@ final class TestCoverageAnalyzer extends AbstractAnalyzer
 
     private function classKind(string $name): ?string
     {
-        if (str_ends_with($name, 'Controller')) {
+        if (substr_compare($name, 'Controller', -strlen('Controller')) === 0) {
             return 'controller';
         }
-        if (str_ends_with($name, 'Service')) {
+        if (substr_compare($name, 'Service', -strlen('Service')) === 0) {
             return 'service';
         }
-        if (str_ends_with($name, 'Repository')) {
+        if (substr_compare($name, 'Repository', -strlen('Repository')) === 0) {
             return 'repository';
         }
 
@@ -144,7 +144,7 @@ final class TestCoverageAnalyzer extends AbstractAnalyzer
         $extends = $class->extends;
         if ($extends !== null && $extends instanceof Node\Name) {
             $name = $extends->toString();
-            if (str_ends_with($name, 'Model')) {
+            if (substr_compare($name, 'Model', -strlen('Model')) === 0) {
                 return 'model';
             }
         }
@@ -154,7 +154,7 @@ final class TestCoverageAnalyzer extends AbstractAnalyzer
 
     private function classKindFromNamespace(string $namespace): ?string
     {
-        if (str_contains($namespace, '\\Models\\') || str_ends_with($namespace, '\\Models')) {
+        if (strpos($namespace, '\\Models\\') !== false || substr_compare($namespace, '\\Models', -strlen('\\Models')) === 0) {
             return 'model';
         }
 
@@ -244,7 +244,7 @@ final class TestCoverageAnalyzer extends AbstractAnalyzer
         if (isset($tests[$className])) {
             // Only consider it a hit if that test class maps to a Test-suffixed name elsewhere.
             $candidate = $tests[$className];
-            if (str_ends_with($candidate['class'], 'Test') || str_ends_with($candidate['class'], 'TestCase')) {
+            if (substr_compare($candidate['class'], 'Test', -strlen('Test')) === 0 || substr_compare($candidate['class'], 'TestCase', -strlen('TestCase')) === 0) {
                 return true;
             }
         }
@@ -256,6 +256,6 @@ final class TestCoverageAnalyzer extends AbstractAnalyzer
     {
         $normalized = str_replace('\\', '/', $file);
 
-        return str_contains($normalized, '/tests/') || str_starts_with($normalized, 'tests/');
+        return strpos($normalized, '/tests/') !== false || strncmp($normalized, 'tests/', strlen('tests/')) === 0;
     }
 }

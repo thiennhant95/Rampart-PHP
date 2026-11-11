@@ -38,20 +38,49 @@ final class ModelMetadata
     public const UNGUARDED = 'unguarded';
 
     public const ASSIGN_UNKNOWN = 'unknown';
-
+    /**
+     * @readonly
+     */
+    public string $model;
+    /**
+     * @readonly
+     */
+    public string $fillableState;
+    /**
+     * @var list<string>|null
+     * @readonly
+     */
+    public ?array $fillableFields;
+    /**
+     * @readonly
+     */
+    public string $guardedState;
+    /**
+     * @var list<string>|null
+     * @readonly
+     */
+    public ?array $guardedFields;
+    /**
+     * @readonly
+     */
+    public bool $guardedAbsent;
+    /**
+     * @readonly
+     */
+    public string $file;
     /**
      * @param list<string>|null $fillableFields null unless KNOWN non-empty
      * @param list<string>|null $guardedFields null unless KNOWN
      */
-    public function __construct(
-        public readonly string $model,
-        public readonly string $fillableState,
-        public readonly ?array $fillableFields,
-        public readonly string $guardedState,
-        public readonly ?array $guardedFields,
-        public readonly bool $guardedAbsent,
-        public readonly string $file,
-    ) {
+    public function __construct(string $model, string $fillableState, ?array $fillableFields, string $guardedState, ?array $guardedFields, bool $guardedAbsent, string $file)
+    {
+        $this->model = $model;
+        $this->fillableState = $fillableState;
+        $this->fillableFields = $fillableFields;
+        $this->guardedState = $guardedState;
+        $this->guardedFields = $guardedFields;
+        $this->guardedAbsent = $guardedAbsent;
+        $this->file = $file;
     }
 
     public static function unknown(string $model, string $file = ''): self
