@@ -6,6 +6,12 @@ All notable changes to Rampart PHP are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-13
+
+### Added
+
+- Real standalone security-scan screenshot in the README and the EN/JA/VI docs pages.
+
 ## [0.1.0] - 2026-11-11
 
 ### Added
