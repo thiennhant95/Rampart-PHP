@@ -1,4 +1,4 @@
----
+﻿---
 layout: default
 title: Rampart PHP — Tiếng Việt
 description: Tài liệu tiếng Việt của Rampart PHP.
@@ -11,6 +11,8 @@ description: Tài liệu tiếng Việt của Rampart PHP.
 Quality gate độc lập cho **PHP thuần và mọi framework** — Slim, CodeIgniter 4,
 FuelPHP, Symfony, Phalcon, Laravel. Tool chạy trên PHP **7.4+**; code target chỉ
 được parse, không thực thi, nên quét được mọi phiên bản PHP.
+
+![Rampart PHP standalone security scan](../assets/rampart-php.png)
 
 ## Hệ sinh thái Rampart
 

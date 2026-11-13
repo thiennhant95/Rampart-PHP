@@ -13,6 +13,8 @@ Rampart wraps `phpcs`, `phpstan`, `phpunit`, `composer audit`, `npm audit` and
 `trivy`, and adds 59 custom PHP-Parser rules for security, framework routing,
 missing tests and conventions.
 
+![Rampart PHP standalone security scan with remediation guidance](docs/assets/rampart-php.png)
+
 ## Rampart family
 
 | Project | Focus | Repository | Documentation |

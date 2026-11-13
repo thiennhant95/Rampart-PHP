@@ -1,4 +1,4 @@
----
+﻿---
 layout: default
 title: Rampart PHP — 日本語
 description: Rampart PHP の日本語ドキュメント。
@@ -11,6 +11,8 @@ description: Rampart PHP の日本語ドキュメント。
 **プレーン PHP とあらゆるフレームワーク**向けのスタンドアロン品質ゲート —
 Slim、CodeIgniter 4、FuelPHP、Symfony、Phalcon、Laravel に対応。ツール自体は
 PHP **7.4+** で動作し、対象コードは実行せず解析のみ行います。
+
+![Rampart PHP standalone security scan](../assets/rampart-php.png)
 
 ## Rampart ファミリー
 

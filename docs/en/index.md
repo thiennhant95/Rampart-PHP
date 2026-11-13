@@ -1,4 +1,4 @@
----
+﻿---
 layout: default
 title: Rampart PHP — English
 description: Full English documentation for Rampart PHP.
@@ -11,6 +11,8 @@ description: Full English documentation for Rampart PHP.
 Standalone quality gate for **plain PHP and any framework** — Slim, CodeIgniter 4,
 FuelPHP, Symfony, Phalcon and Laravel. PHP **7.4+** for the tool; the target is
 parsed, never executed, so any PHP version can be scanned.
+
+![Rampart PHP standalone security scan](../assets/rampart-php.png)
 
 ## The Rampart family
 
