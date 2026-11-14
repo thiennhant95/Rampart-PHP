@@ -1,10 +1,14 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to Rampart PHP are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+
+### Fixed
+
+- Console output no longer claims `✔ All checks passed.` when checkers reported findings within the `--fail-on` threshold — it now says so explicitly.
 
 ## [0.1.1] - 2026-11-13
 
