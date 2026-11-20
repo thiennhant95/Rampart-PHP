@@ -6,6 +6,30 @@ All notable changes to Rampart PHP are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-20
+
+### Added
+
+- `MISSING_COMPOSER` and `INVALID_CONSTRAINT`: a Composer-managed project
+  (installed `vendor/`, lock file, or a Composer console binary) with no
+  `composer.json`, or a manifest that is unparseable / carries a non-string
+  `php` or `laravel/framework` constraint.
+- Shared `PhpPayloadPatterns` detector backing `OBFUSCATED_PHP` and the
+  rogue-file grading (PHP 7.4-compatible, string/comment stripping).
+
+### Changed
+
+- `ROGUE_PHP` grades by content: obfuscation/code-execution evidence →
+  Critical with `metadata.matched_pattern`; an otherwise benign misplaced file
+  → Warning. The rule stays opt-in.
+- `PERMS_TOO_OPEN` compares permission bits instead of a hardcoded octal list:
+  other-write → Critical, group-write → Warning; file/dir-specific fix hints;
+  `.env` at the usual 644 is silent; `storage/framework` and `storage/logs` are
+  whitelisted.
+- `EOL_COMPONENT` reports lines older than the tracked map with a generic
+  "older than X" message, and stays silent for open ranges (`>=`) and any
+  supported line.
+
 ### Fixed
 
 - Console output no longer claims `✔ All checks passed.` when checkers reported findings within the `--fail-on` threshold — it now says so explicitly.
