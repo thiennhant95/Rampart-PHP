@@ -36,7 +36,10 @@ producing false positives on Phalcon, Slim, CI4 or plain PHP.
 | `HEADER_INJECTION` | Skips `Location:` so it does not duplicate `OWASP_OPEN_REDIRECT`. |
 | `INSECURE_RANDOM` | Only reports when the assignment/function name looks security-related (`token`, `otp`, `salt`, ...). |
 | `DEBUG_OUTPUT` | Off by default; CLI scripts dump variables legitimately. |
-| `ROGUE_PHP` | Off by default in this build: `public/*.php` is normal outside Laravel. |
+| `ROGUE_PHP` | Off by default in this build: `public/*.php` is normal outside Laravel. When enabled, a benign file is a Warning; only obfuscation/code-exec content is Critical. |
+| `PERMS_TOO_OPEN` | Checks only `.env`, `storage` and `bootstrap/cache` at the scan root, by write bits: `o+w` Critical, `g+w` Warning. `.env` at the usual 644 is not reported. |
+| `EOL_COMPONENT` | Fires only when every mentioned line is EOL. Open ranges (`>=`) and any supported line stay silent; below the tracked map gets a generic "older than" message. |
+| `MISSING_COMPOSER` | Only when there is Composer evidence (`vendor/`, `composer.lock`, `bin/console`); a plain `src/` folder never reports. |
 
 ## Rules that are opt-in
 

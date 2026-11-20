@@ -140,6 +140,7 @@ return [
         'ops' => [
             'perms' => true,
             'eol' => true,
+            'composer' => true,
         ],
 
         'models_dirs' => ['app/Models'],

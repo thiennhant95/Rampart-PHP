@@ -49,12 +49,31 @@ final class RoguePhpAnalyzerTest extends TestCase
         return $path;
     }
 
-    public function testFlagsRoguePhpInPublic(): void
+    public function testBenignRoguePhpIsWarning(): void
     {
         $this->file('public/shell.php');
         $issues = $this->analyzer($this->tmp)->analyze([]);
         self::assertCount(1, $issues);
         self::assertSame('ROGUE_PHP', $issues[0]->rule);
+        self::assertSame(Severity::$Warning, $issues[0]->severity);
+        self::assertSame('benign', $issues[0]->metadata['classification']);
+    }
+
+    public function testObfuscatedRoguePhpIsCritical(): void
+    {
+        $this->file('public/shell.php', "<?php\neval(base64_decode('ZWNobyAxOw=='));\n");
+        $issues = $this->analyzer($this->tmp)->analyze([]);
+        self::assertCount(1, $issues);
+        self::assertSame(Severity::$Critical, $issues[0]->severity);
+        self::assertSame('dangerous', $issues[0]->metadata['classification']);
+        self::assertArrayHasKey('matched_pattern', $issues[0]->metadata);
+    }
+
+    public function testDangerousCallRoguePhpIsCritical(): void
+    {
+        $this->file('public/tool.php', "<?php\nsystem(\$_GET['cmd']);\n");
+        $issues = $this->analyzer($this->tmp)->analyze([]);
+        self::assertCount(1, $issues);
         self::assertSame(Severity::$Critical, $issues[0]->severity);
     }
 

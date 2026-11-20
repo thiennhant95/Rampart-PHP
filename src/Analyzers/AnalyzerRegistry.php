@@ -14,6 +14,7 @@ use Rampart\Php\Analyzers\Frontend\CssSyntaxAnalyzer;
 use Rampart\Php\Analyzers\Frontend\JsSyntaxAnalyzer;
 use Rampart\Php\Analyzers\Laravel\MigrationAnalyzer;
 use Rampart\Php\Analyzers\Laravel\RouteValidationAnalyzer;
+use Rampart\Php\Analyzers\Ops\ComposerManifestAnalyzer;
 use Rampart\Php\Analyzers\Ops\EolAnalyzer;
 use Rampart\Php\Analyzers\Ops\PermsAnalyzer;
 use Rampart\Php\Analyzers\Owasp\OwaspAccessControlAnalyzer;
@@ -135,6 +136,7 @@ final class AnalyzerRegistry
             self::laravelEntry($analyzers, 'frontend.blade_stack', new BladeStackAnalyzer(), $isLaravel),
             self::entry($analyzers, 'ops.perms', new PermsAnalyzer()),
             self::entry($analyzers, 'ops.eol', new EolAnalyzer()),
+            self::entry($analyzers, 'ops.composer', new ComposerManifestAnalyzer()),
         ];
     }
 

@@ -552,10 +552,11 @@ final class RuleRemediation
                 'docs' => null,
             ],
             'PERMS_TOO_OPEN' => [
-                'why' => 'File or directory is world-writable (777/666) — deploy artifact leaks or is mutable by any local user.',
+                'why' => 'File or directory is writable by other/group — deploy artifact leaks or is mutable by any local user.',
                 'fix' => <<<'CODE'
-                    chmod 755 app/ storage/ bootstrap/cache/
+                    chmod 755 storage/ bootstrap/cache/
                     chmod 644 app/**/*.php
+                    chmod 600 .env  # or 640 when the web server needs group read
                     # .gitignore vendor/ and never deploy with 777
                     CODE,
                 'docs' => null,
@@ -569,8 +570,26 @@ final class RuleRemediation
                     CODE,
                 'docs' => null,
             ],
+            'MISSING_COMPOSER' => [
+                'why' => 'A Composer-managed project has no composer.json — dependencies are not reproducible or auditable.',
+                'fix' => <<<'CODE'
+                    # Restore the manifest from version control, then:
+                    composer validate
+                    composer install --no-dev --optimize-autoloader
+                    CODE,
+                'docs' => null,
+            ],
+            'INVALID_CONSTRAINT' => [
+                'why' => 'composer.json is unparseable or a version constraint is not a string — pins cannot be checked.',
+                'fix' => <<<'CODE'
+                    composer validate
+                    # Fix JSON syntax and require entries, e.g. "php": "^8.3"
+                    composer update --lock
+                    CODE,
+                'docs' => null,
+            ],
             'ROGUE_PHP' => [
-                'why' => 'Unexpected PHP file in public/ or upload dir — possible webshell or dropper.',
+                'why' => 'Unexpected PHP file in public/ — almost always a webshell or dropper. Files matching obfuscation/code-exec payloads are Critical; otherwise the finding stays a Warning for the convention violation.',
                 'fix' => <<<'CODE'
                     # Remove it, audit git history, and re-deploy from clean artifact:
                     git log --all -- public/
