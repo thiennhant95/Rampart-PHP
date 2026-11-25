@@ -6,6 +6,21 @@ All notable changes to Rampart PHP are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-11-25
+
+### Fixed
+
+- Security and OWASP analyzers skip test paths by default, so fixture files
+  are not reported as production sinks.
+- `OWASP_SSRF` no longer flags paths rooted at `__DIR__`/`__FILE__`/`dirname()`.
+- `call_user_func` callables guarded by `is_callable()` or
+  `instanceof \Closure` in the same function are treated as internally
+  registered.
+
+### Changed
+
+- README now documents project status, supported versions and scope.
+
 ## [0.2.1] - 2026-11-25
 
 ### Fixed
