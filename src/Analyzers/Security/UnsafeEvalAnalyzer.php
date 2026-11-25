@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rampart\Php\Analyzers\Security;
 
 use PhpParser\Node;
+use PhpParser\PrettyPrinter\Standard;
 use Rampart\Php\Analyzers\AbstractAnalyzer;
 use Rampart\Php\Result\Issue;
 use Rampart\Php\Result\Severity;
@@ -28,7 +29,7 @@ final class UnsafeEvalAnalyzer extends AbstractAnalyzer
     {
         $issues = [];
         foreach ($files as $file) {
-            if (!$this->supports($file)) {
+            if (!$this->supports($file) || $this->isTestPath($file)) {
                 continue;
             }
             foreach ($this->analyzeFile($file) as $issue) {
@@ -167,6 +168,7 @@ final class UnsafeEvalAnalyzer extends AbstractAnalyzer
             if (
                 $this->isStaticValue($firstArg)
                 || $this->isFixedCallable($firstArg)
+                || $this->isGuardedCallable($firstArg, $call, $nodes)
                 || $this->isValidatedExpression($firstArg, $call, $nodes)
             ) {
                 return;
@@ -215,6 +217,62 @@ final class UnsafeEvalAnalyzer extends AbstractAnalyzer
             Severity::$Critical,
             ['function' => $target, 'via' => $name]
         );
+    }
+
+    /**
+     * A callable checked with is_callable($x) or `$x instanceof \Closure` in
+     * the same function is internally registered, not attacker-selected.
+     *
+     * @param list<Node> $nodes
+     */
+    private function isGuardedCallable(Node\Expr $expr, Node $call, array $nodes): bool
+    {
+        $func = $this->enclosingFunction($call, $nodes);
+        if ($func === null) {
+            return false;
+        }
+        $printer = new Standard();
+        $target = $printer->prettyPrintExpr($expr);
+        $guards = $this->finder()->find($func, static function (Node $node): bool {
+            if (
+                $node instanceof Node\Expr\FuncCall
+                && $node->name instanceof Node\Name
+                && strtolower($node->name->toString()) === 'is_callable'
+                && isset($node->args[0])
+            ) {
+                return true;
+            }
+
+            return $node instanceof Node\Expr\Instanceof_ && $node->class instanceof Node\Name;
+        });
+        foreach ($guards as $guard) {
+            if ($guard instanceof Node\Expr\FuncCall) {
+                $arg = $guard->args[0] ?? null;
+                if (!$arg instanceof Node\Arg) {
+                    continue;
+                }
+                $argExpr = $arg->value;
+                if (
+                    $argExpr instanceof Node\Expr\BinaryOp\Coalesce
+                    && $argExpr->right instanceof Node\Expr\ConstFetch
+                    && strtolower($argExpr->right->name->toString()) === 'null'
+                ) {
+                    $argExpr = $argExpr->left;
+                }
+                if ($printer->prettyPrintExpr($argExpr) === $target) {
+                    return true;
+                }
+                continue;
+            }
+            if ($guard instanceof Node\Expr\Instanceof_ && $guard->class instanceof Node\Name) {
+                $class = strtolower(ltrim($guard->class->toString(), '\\'));
+                if ($class === 'closure' && $printer->prettyPrintExpr($guard->expr) === $target) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private function isStaticArray(Node\Expr\Array_ $array): bool

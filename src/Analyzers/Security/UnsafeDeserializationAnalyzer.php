@@ -22,7 +22,7 @@ final class UnsafeDeserializationAnalyzer implements ScanContextAware
     {
         $issues = [];
         foreach ($files as $file) {
-            if (!$this->supports($file)) {
+            if (!$this->supports($file) || $this->isTestPath($file)) {
                 continue;
             }
             foreach ($this->analyzeFile($file) as $issue) {
@@ -31,6 +31,15 @@ final class UnsafeDeserializationAnalyzer implements ScanContextAware
         }
 
         return $issues;
+    }
+
+    private function isTestPath(string $path): bool
+    {
+        $normalized = strtolower(str_replace('\\', '/', $path));
+
+        return strpos($normalized, '/tests/') !== false
+            || strpos($normalized, '/test/') !== false
+            || substr($normalized, -8) === 'test.php';
     }
 
     public function supports(string $path): bool

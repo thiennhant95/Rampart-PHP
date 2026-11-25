@@ -27,6 +27,17 @@ Full documentation: **[English](https://thiennhant95.github.io/Rampart-PHP/en/)*
 **[日本語](https://thiennhant95.github.io/Rampart-PHP/ja/)** ·
 **[Tiếng Việt](https://thiennhant95.github.io/Rampart-PHP/vi/)**
 
+## Project status
+
+- **Beta (0.x)** — CI and the full test suite run on every push. Rule IDs and
+  report fields are stable in practice but may change in a minor release until
+  1.0; pin a tag in CI.
+- **Supported versions** — the tool runs on PHP `>=7.4`; scanned targets are
+  parsed, not executed.
+- **Scope** — static heuristics over the AST, not a full SAST replacement.
+  Expect false positives/negatives; see "False positives" below.
+- **Security** — report vulnerabilities privately via `SECURITY.md`.
+
 ## Why standalone
 
 - **No `vendor/` in the target** — audit legacy, read-only or broken projects.
